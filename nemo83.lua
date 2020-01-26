@@ -199,7 +199,7 @@ function n.colour(fg, bg)
   if fg and colours[math.floor(fg)] then
     cur_fg = colours[math.floor(fg)]
   else
-    cur_fg = colours[math.floor((n.t/10)%10)]
+    cur_fg = colours[math.floor((n.t/10)%11)]
   end
   if (bg) then
     bg = math.floor(bg)

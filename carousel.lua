@@ -19,7 +19,7 @@ function cart.splash.draw()
     n.switch_mode("main")
   end
   for i=1, letter+1 do
-    n.colour(i%10)
+    n.colour(i%11)
     n.print(n.name,n.width/2,((-n.t)%(n.height*1.2))+i*10-n.height, 0, 0)
   end
 end

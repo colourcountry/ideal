@@ -4,7 +4,8 @@ game = {
   clear={},
   start_mode="splash",
   name="PHALANX",
-  info="Shooting game"
+  info="a shooting game",
+  msg=""
 }
 
 bg = 8
@@ -29,7 +30,7 @@ end
 
 
 function game.start()
-  msg = game.name
+  game.msg = game.name
   player = n.ent(n.width/2, n.height-16, 8, "A")
   score = 0
   mobs = n.loop()
@@ -63,14 +64,14 @@ function game.splash.draw()
   n.border(bg)
   draw_scene()
   draw_hiscore()
-  n.print(msg, n.width/2, n.height/2-20, 0, 0)
+  n.print(game.msg, n.width/2, n.height/2-20, 0, 0)
   n.print("TOUCH TO BEGIN", n.width/2, n.height/2, 0, 0)
 end
 
 function game.clear.draw()
   draw_scene()
   draw_score()
-  msg = game.name
+  game.msg = game.name
   n.print("STAGE CLEAR", n.width/2, n.height/2, 0, 0)
   if score>hi then
     hi = score
@@ -100,7 +101,7 @@ function game.main.update()
        reverse=true
     end
     if m:collides(player) then
-      msg = "GAME OVER"
+      game.msg = "GAME OVER"
       n.switch_mode("splash")
     end
     if m.y>n.height then
