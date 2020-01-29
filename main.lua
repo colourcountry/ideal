@@ -1,23 +1,33 @@
 -- TODO detect installed carts somehow
-carts = {}
-files = love.filesystem.getDirectoryItems("carts")
-for k, v in pairs(files) do
-  local req = v:gsub("%.lua","")
-  carts[k] = require("carts."..req)
-  carts[k].req = req
-  print(v..": "..carts[k].name)
-end
+
 
 function love.load()
   -- Load the main console API.
-  cart = {}
-  mode = ''
+
   n = require("nemo83")
 
-  -- Load carts, which should not have access to LOVE.
-  local _love = love
-  love = nil
+  function n.getCart(cartid)
+    if (not n.carts[cartid]) then
+      local path = "carts/"..cartid
+      print(love.filesystem.getRealDirectory(path))
+      print(path)
+      local realpath = love.filesystem.getRealDirectory(path).."/"..path
+      local f, msg = loadfile(realpath,"t",n.environment())
+      if (f) then
+        n.carts[cartid] = f()
+        n.api.log("Loaded "..path.." from "..realpath)
+      else
+        n.api.log("Couldn't find ",path," at "..realpath)
+        n.api.log("Message:",msg)
+      end
+    end
+    return n.carts[cartid]
+  end
 
-  n.exit() -- load carousel
-  love = _love
+  for k,v in pairs(love.filesystem.getDirectoryItems("carts")) do
+    n.api.log("loading "..v)
+    n.getCart(v)
+  end
+
+  n.api.exit() -- load carousel
 end

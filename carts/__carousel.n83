@@ -1,0 +1,73 @@
+c = {
+  name="Carousel",
+  start_mode="splash",
+  hidden=true
+}
+
+c.splash = mode()
+c.main = mode()
+
+function c:start()
+  cartNames = {}
+  cartIds = {}
+  for k,v in pairs(self.carts) do
+    cartNames[#cartNames+1] = "THE "..k:upper():gsub("_"," ")
+    cartIds[#cartIds+1] = k
+  end
+  log("Found ",#cartNames," carts")
+  m = menu(cartNames)
+  msg = "SELECT CARTRIDGE"
+end
+
+function c:shutdown()
+  if c.quit then -- only if this has been injected
+    c.quit()
+  end
+end
+
+function c.splash:draw()
+  border(0)
+  colour(0,11)
+  cls()
+  local letter = floor(t/4)
+  if (letter>48) then
+    switch_mode("main")
+  end
+  for i=1, letter+1 do
+    colour(i%11)
+    print(modelName,width/2,((-t)%(height*1.2))+i*10-height, 0, 0)
+  end
+end
+
+function c.splash:touch(x,y,isNew)
+  if (isNew) then
+    switch_mode("main")
+  end
+end
+
+function c.main:update()
+  if (count==0) then
+    die("NO CARTS FOUND")
+    return
+  end
+end
+
+function c.main:draw()
+  border(5)
+  colour(3,4)
+  cls()
+  m:draw()
+  colour()
+  printTitle(modelName, width/2, 24, 0, 0)
+  colour(4)
+  print(msg, width/2, 40, 0, 0)
+end
+
+function c.main:touch(x,y,isNew)
+  local t = m:touch(x, y, isNew)
+  if (t) then
+    c.switchCart(cartIds[t])
+  end
+end
+
+return c

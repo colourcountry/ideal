@@ -1,0 +1,31 @@
+c = {
+  name="Error",
+  start_mode="main",
+  hidden=true
+}
+
+c.main=mode()
+
+function c:shutdown()
+  if c.quit then -- only if this has been injected
+    c.quit()
+  end
+end
+
+function c.main:draw()
+  border(1)
+  colour(3)
+  print(modelName, width/2, ((-t)%(height+112))-80, 0, 0)
+  colour(2)
+  print(c.msg, width/2, ((-t)%(height+112))-48, 0, 0)
+  colour(4)
+  print(modelContact, width/2, ((-t)%(height+112))-16, 0, 0)
+end
+
+function c.main:touch(x,y,isNew)
+  if (isNew) then
+    exit()
+  end
+end
+
+return c
