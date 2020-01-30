@@ -4,7 +4,7 @@ c = {
   hidden=true
 }
 
-c.main=mode()
+c.main=NEWMODE()
 
 function c:shutdown()
   if c.quit then -- only if this has been injected
@@ -13,18 +13,18 @@ function c:shutdown()
 end
 
 function c.main:draw()
-  border(1)
-  colour(3)
-  print(modelName, width/2, ((-t)%(height+112))-80, 0, 0)
-  colour(2)
-  print(c.msg, width/2, ((-t)%(height+112))-48, 0, 0)
-  colour(4)
-  print(modelContact, width/2, ((-t)%(height+112))-16, 0, 0)
+  BORDER(1)
+  COLOUR(3)
+  PRINT(modelName, width/2, ((-t)%(height+112))-80, 0, 0)
+  COLOUR(2)
+  PRINT(c.msg, width/2, ((-t)%(height+112))-48, 0, 0)
+  COLOUR(4)
+  PRINT(modelContact, width/2, ((-t)%(height+112))-16, 0, 0)
 end
 
 function c.main:touch(x,y,isNew)
   if (isNew) then
-    exit()
+    EXIT()
   end
 end
 

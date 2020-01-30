@@ -1,0 +1,63 @@
+c = {
+  name="Paint",
+  start_mode="init",
+  init = NEWMODE(),
+  paint = NEWMODE()
+}
+
+pot_size = W/11
+
+fg = 1
+
+
+function c.init:draw()
+  COLOUR(fg,11)
+  CLS()
+  MODE("paint")
+  brush = nil
+end
+
+function draw_paintbox()
+  for i=1,10 do
+    COLOUR(i)
+    local x = (i-1)*pot_size
+    PANEL(x,0,pot_size)
+  end
+end
+
+function c.paint:draw()
+  BORDER(fg)
+  if brush then
+    COLOUR(fg)
+    if brush.dx then
+      local xstep, ystep, d = DIRECTION(brush.dx, brush.dy)
+      local xoff, yoff = 0, 0
+      while (d>0) do
+        DISC(brush.x+xoff, brush.y+yoff, 3)
+        xoff = xoff - xstep
+        yoff = yoff - ystep
+        d = d - 1
+      end
+    end
+    DISC(brush.x,brush.y,4)
+  end
+  draw_paintbox()
+end
+
+function c.paint:touch(x,y,isNew)
+  local nb = ENT(x,y,4)
+  if isNew then
+    brush = nil
+    if y<(pot_size) then
+      fg = 1+FLR(x/pot_size)
+      return
+    end
+  end
+  if brush then
+    nb.dx = x-brush.x
+    nb.dy = y-brush.y
+  end
+  brush = nb
+end
+
+return c

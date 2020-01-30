@@ -6,7 +6,7 @@ function love.load()
 
   n = require("nemo83")
 
-  function n.getCart(cartid)
+  function n.get_cart(cartid)
     if (not n.carts[cartid]) then
       local path = "carts/"..cartid
       print(love.filesystem.getRealDirectory(path))
@@ -15,19 +15,19 @@ function love.load()
       local f, msg = loadfile(realpath,"t",n.environment())
       if (f) then
         n.carts[cartid] = f()
-        n.api.log("Loaded "..path.." from "..realpath)
+        n.api.LOG("Loaded "..path.." from "..realpath)
       else
-        n.api.log("Couldn't find ",path," at "..realpath)
-        n.api.log("Message:",msg)
+        n.api.LOG("Couldn't find ",path," at "..realpath)
+        n.api.LOG("Message:",msg)
       end
     end
     return n.carts[cartid]
   end
 
   for k,v in pairs(love.filesystem.getDirectoryItems("carts")) do
-    n.api.log("loading "..v)
-    n.getCart(v)
+    n.api.LOG("loading "..v)
+    n.get_cart(v)
   end
 
-  n.api.exit() -- load carousel
+  n.api.EXIT() -- load carousel
 end

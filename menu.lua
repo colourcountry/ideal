@@ -15,23 +15,23 @@ dragging = false
 
 function menu:init(sortFn)
   if (not self.width) then
-    self.width = n.api.width
+    self.width = n.api.W
   end
   local y = 0
   self.enum = {}
   self.enumY = {}
-  self.itemsBreak = {}
+  self.itemsSplit = {}
   for k in pairs(self.items) do
     table.insert(self.enum,k)
   end
   table.sort(self.enum, sortFn)
   for i,k in pairs(self.enum) do
     self.enumY[i] = y
-    self.itemsBreak[k] = n.api.breakText(self.items[k], self.width, true)
-    y = y + (#self.itemsBreak[k]+1)*system_line_height
+    self.itemsSplit[k] = n.api.SPLIT(self.items[k], self.width, true)
+    y = y + (#self.itemsSplit[k]+1)*system_line_height
   end
   self.totalHeight = y
-  self.centreY = n.api.height/2 - system_line_height
+  self.centreY = n.api.H/2 - system_line_height
   self.windowY = 100
 end
 
@@ -39,19 +39,19 @@ function menu:draw()
   self.choice = nil
   for i=1, #self.enum do
     local k = self.enum[i]
-    local l = self.itemsBreak[k]
+    local l = self.itemsSplit[k]
     local y = self.scrollY+self.enumY[i]
     if y>-(self.windowY+system_line_height) and y<self.windowY then
       if ((y>=0 or i==#self.items) and not self.choice) then
         self.choice = k
         self.boxY = y+self.centreY
         self.boxSize = system_line_height*(1+#l)
-        n.api.colour()
-        n.api.rect(10,y+self.centreY,n.api.width-20,self.boxSize)
-        n.api.printLines(l, n.api.width/2, y+8+self.centreY, 0, 0)
+        n.api.COLOUR()
+        n.api.RECT(10,y+self.centreY,n.api.W-20,self.boxSize)
+        n.api.PRINTLINES(l, n.api.W/2, y+8+self.centreY, 0, 0)
       else
-        n.api.colour(self.colour)
-        n.api.printLines(l, n.api.width/2, y+8+self.centreY, 0, 0)
+        n.api.COLOUR(self.colour)
+        n.api.PRINTLINES(l, n.api.W/2, y+8+self.centreY, 0, 0)
       end
     end
   end

@@ -9,7 +9,7 @@ ent = {
 ent.__index = ent
 
 local function is_on_screen(x, y, r)
-  if x<r or y<r or x>n.api.width-r or y>n.api.height-r then
+  if x<r or y<r or x>n.api.W-r or y>n.api.H-r then
     return false
   end
   return true

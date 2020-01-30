@@ -4,18 +4,20 @@ c = {
   hidden=true
 }
 
-c.splash = mode()
-c.main = mode()
+c.splash = NEWMODE()
+c.main = NEWMODE()
 
 function c:start()
   cartNames = {}
   cartIds = {}
   for k,v in pairs(self.carts) do
-    cartNames[#cartNames+1] = "THE "..k:upper():gsub("_"," ")
-    cartIds[#cartIds+1] = k
+    if not v.hidden then
+      cartNames[#cartNames+1] = v.name:upper()
+      cartIds[#cartIds+1] = k
+    end
   end
-  log("Found ",#cartNames," carts")
-  m = menu(cartNames)
+  LOG("Found ",#cartNames," carts")
+  m = MENU(cartNames)
   msg = "SELECT CARTRIDGE"
 end
 
@@ -26,47 +28,47 @@ function c:shutdown()
 end
 
 function c.splash:draw()
-  border(0)
-  colour(0,11)
-  cls()
-  local letter = floor(t/4)
+  BORDER(0)
+  COLOUR(0,11)
+  CLS()
+  local letter = FLR(T/4)
   if (letter>48) then
-    switch_mode("main")
+    MODE("main")
   end
   for i=1, letter+1 do
-    colour(i%11)
-    print(modelName,width/2,((-t)%(height*1.2))+i*10-height, 0, 0)
+    COLOUR(i%11)
+    PRINT(MODEL,W/2,((-T)%(H*1.2))+i*10-H, 0, 0)
   end
 end
 
 function c.splash:touch(x,y,isNew)
   if (isNew) then
-    switch_mode("main")
+    MODE("main")
   end
 end
 
 function c.main:update()
   if (count==0) then
-    die("NO CARTS FOUND")
+    DIE("NO CARTS FOUND")
     return
   end
 end
 
 function c.main:draw()
-  border(5)
-  colour(3,4)
-  cls()
+  BORDER(5)
+  COLOUR(3,4)
+  CLS()
   m:draw()
-  colour()
-  printTitle(modelName, width/2, 24, 0, 0)
-  colour(4)
-  print(msg, width/2, 40, 0, 0)
+  COLOUR()
+  TITLE(modelName, W/2, 24, 0, 0)
+  COLOUR(4)
+  PRINT(msg, W/2, 40, 0, 0)
 end
 
 function c.main:touch(x,y,isNew)
   local t = m:touch(x, y, isNew)
   if (t) then
-    c.switchCart(cartIds[t])
+    c.switch_cart(cartIds[t])
   end
 end
 
