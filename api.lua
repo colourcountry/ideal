@@ -7,6 +7,7 @@ api = {
   LINES=system_line_height,
   PAIRS=pairs,
   pairs=pairs, -- allow this one lowercase function because it's fundamental to lua
+  STR=tostring,
   FLR=math.floor,
   CEIL=math.ceil,
   MAX=math.max,
@@ -60,14 +61,17 @@ function api.NEWMODE(parent)
   return o
 end
 
+entid = 1
 function api.ENT(x, y, r, spr)
   local ent = require("ent")
   local o = {
     x=x,
     y=y,
     r=r,
+    id=entid,
     spr=spr
   }
+  entid = entid+1
   setmetatable(o, ent)
   return o
 end
@@ -112,7 +116,13 @@ texts = {}
 
 function api.PRINT(strg, x, y, anchor_x, anchor_y)
   if (not strg) then
-    strg = "-NIL-"
+    strg = "-"
+  end
+  if (not anchor_x) then
+    anchor_x = -1
+  end
+  if (not anchor_y) then
+    anchor_y = 1
   end
   if (not texts[strg]) then
     texts[strg] = love.graphics.newText(system_font, strg)

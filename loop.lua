@@ -62,6 +62,7 @@ function loop:remove(i)
   end
   self.path[i] = nil
   self.rpath[i] = nil
+  self[i] = nil
   self.length = self.length - 1
 end
 
@@ -82,6 +83,15 @@ function loop:each(f)
     end
     i = self.path[i]
   end
+end
+
+function loop:pop()
+  if self.length==0 then
+    return nil
+  end
+  local p = self[self.first]
+  self:remove(self.first)
+  return p
 end
 
 return loop

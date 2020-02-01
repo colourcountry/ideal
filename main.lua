@@ -29,5 +29,6 @@ function love.load()
     n.get_cart(v)
   end
 
-  n.api.EXIT() -- load carousel
+  n.switch_cart("jewels.n83")
+  -- n.api.EXIT() -- load carousel
 end
