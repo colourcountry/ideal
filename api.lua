@@ -14,7 +14,7 @@ api = {
   MIN=math.min,
   ABS=math.abs,
   RND=math.random,
-  SQRT=math.sqrt
+  SQRT=math.sqrt,
 }
 
 function dumpobj(o)
@@ -62,17 +62,31 @@ function api.NEWMODE(parent)
 end
 
 entid = 1
-function api.ENT(x, y, r, spr)
+function api.ENT(x, y, r, spr, c)
   local ent = require("ent")
   local o = {
     x=x,
     y=y,
     r=r,
     id=entid,
-    spr=spr
+    spr=spr,
+    c=c
   }
   entid = entid+1
   setmetatable(o, ent)
+  return o
+end
+
+mapid = 1
+function api.MAP(cx, cy)
+  local map = require("map")
+  local o = {
+    cx=cx,
+    cy=cy,
+    id=mapid
+  }
+  mapid = mapid+1
+  setmetatable(o, map)
   return o
 end
 
@@ -128,6 +142,14 @@ function api.PRINT(strg, x, y, anchor_x, anchor_y)
     texts[strg] = love.graphics.newText(system_font, strg)
   end
   print_text(texts[strg], x, y, anchor_x, anchor_y)
+end
+
+function api.SPR(spr, x, y)
+  if (not sprts[spr]) then
+    sprts[spr] = love.graphics.newText(sprite_font, spr)
+  end
+  love.graphics.setColor(cur_fg)
+  love.graphics.draw(sprts[spr],x-8,y-8)
 end
 
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
@@ -260,6 +282,11 @@ end
 function api.DIRECTION(x,y)
   a = math.sqrt(x*x+y*y)
   return x/a, y/a, a
+end
+
+function api.TODAY()
+  local d = tonumber(os.date("%Y%m%d"))
+  love.math.setRandomSeed(d)
 end
 
 return api

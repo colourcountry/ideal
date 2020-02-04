@@ -29,6 +29,16 @@ function love.load()
     n.get_cart(v)
   end
 
-  n.switch_cart("jewels.n83")
-  -- n.api.EXIT() -- load carousel
+  for k,v in pairs(arg) do
+    cart_arg = string.gsub(v, "(.*/)(.*)", "%2")
+    if n.carts[cart_arg] then
+      cart_found = cart_arg
+    end
+  end
+
+  if cart_found then
+    n.switch_cart(cart_found)
+  else
+    n.api.EXIT() -- load carousel
+  end
 end

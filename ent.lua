@@ -5,10 +5,9 @@ ent = {
     dx=0,
     dy=0,
     spr="@",
+    c=nil
 }
 ent.__index = ent
-
-id = 1
 
 local function is_on_screen(x, y, r)
   if x<r or y<r or x>n.api.W-r or y>n.api.H-r then
@@ -33,10 +32,10 @@ function ent:collides(other)
 end
 
 function ent:draw()
-  if (not sprts[self.spr]) then
-    sprts[self.spr] = love.graphics.newText(sprite_font, self.spr)
+  if self.c then
+    n.api.COLOUR(self.c)
   end
-  print_text(sprts[self.spr], self.x, self.y, 0, 0)
+  n.api.SPR(self.spr, self.x, self.y)
 end
 
 return ent
