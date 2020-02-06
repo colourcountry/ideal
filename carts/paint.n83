@@ -1,12 +1,12 @@
 c = {
-  name="Paint",
+  name="Cafebad",
   start_mode="init",
   init = NEWMODE(),
   paint = NEWMODE()
 }
 
+t = {}
 pot_size = W/11
-
 fg = 1
 
 
@@ -42,20 +42,37 @@ function c.paint:draw()
     DISC(brush.x,brush.y,4)
   end
   draw_paintbox()
+  for i=1,#t do
+    local y = "."
+    if t[i][3] then
+      y = "0"
+    end
+    COLOUR(11)
+    PANEL(0,i*20-6,W,12)
+    COLOUR(0)
+    PRINT(STR(t[i][1])..","..STR(t[i][2]).." "..y,W/2,i*20,0,0)
+  end
+  t = {}
+end
+
+function c.paint:frame()
+  old_brush = brush
 end
 
 function c.paint:touch(x,y,isNew)
+  t[#t+1] = {x,y,isNew}
   local nb = ENT(x,y,4)
   if isNew then
+    old_brush = nil
     brush = nil
     if y<(pot_size) then
       fg = 1+FLR(x/pot_size)
       return
     end
   end
-  if brush then
-    nb.dx = x-brush.x
-    nb.dy = y-brush.y
+  if old_brush then
+    nb.dx = x-old_brush.x
+    nb.dy = y-old_brush.y
   end
   brush = nb
 end

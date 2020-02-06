@@ -1,0 +1,221 @@
+game = {
+  start_mode="splash",
+  name="JEWELS",
+  info="a matching game",
+}
+
+empty = LOOP() -- convenience
+
+game.splash = NEWMODE()
+game.main = NEWMODE()
+
+bg = 8
+hi = 0
+msg = ""
+debug = false
+
+function draw_scene()
+  jewels:each(function(e, rm)
+    e:draw()
+  end)
+  COLOUR(0)
+  if map and debug then
+    for i=1,9 do
+      for j=1,14 do
+        if map[i] and map[i][j] then
+          local e = map[i][j]
+          COLOUR(e.c)
+          if e.ty then
+            PANEL(e.x+j-8,e.y,1,(e.ty-e.y))
+          end
+        end
+      end
+    end
+  end
+end
+
+
+function game:start()
+  score = 0
+  flags = {}
+  jewels = empty
+  mode_menu = MENU({
+    main="START"
+  })
+end
+
+------------------------------------------------------------------- splash
+
+function game.splash:start()
+  jewels = empty
+end
+
+function game.splash:touch(x, y, isNew)
+  local t = mode_menu:touch(x, y, isNew)
+  if (t) then
+    MODE(t)
+  end
+end
+
+function game.splash:draw()
+  CLS(11)
+  draw_scene()
+  draw_hiscore()
+  mode_menu:draw()
+  COLOUR(11)
+  PANEL(10, H/4-2*L, W-20, 5*L)
+  COLOUR(-1)
+  TITLE(game.name, W/2, H/4, 0, 0)
+  COLOUR(0)
+  PRINT("SELECT GAME MODE", W/2, H/4+2*L, 0, 0)
+  BORDER(bg)
+end
+
+------------------------------------------------------------------- main
+
+function game.main:start()
+  score = 0
+  react = LOOP()
+  self:setup_jewels()
+  bg = FLR(RND(9))
+end
+
+function new_jewel(mx,my)
+  local maxcol = 4+FLR(score/4000)
+  local e = ENT(mx*16,my*16,16,"B",(RND(maxcol)*2)%11-1)
+  jewels:add( e )
+  map[mx][my] = e
+end
+
+function game.main:setup_jewels()
+  jewels = LOOP()
+  map = {}
+  for i=1,8 do
+    map[i] = {}
+    for j=3,14 do
+      new_jewel(i,j)
+    end
+  end
+  return jewels, map
+end
+
+function jewel_intent(e,e_rm)
+  e.react = nil
+  e.spr = "B"
+  if e.leaving then
+    return
+  end
+  local by = e.y
+  if e.ty and e.ty>e.y then
+    by = e.ty
+  end
+  local mx, my = FLR(e.x/16), FLR(by/16)
+  local tmy = my
+  while tmy<14 and not map[mx][tmy+1] do
+    tmy = tmy + 1
+    e.ty = tmy*16
+  end
+  map[mx][my] = nil
+  map[mx][tmy] = e
+end
+
+function jewel_update(e,e_rm)
+  if e.leaving then
+    e.leaving = e.leaving - 1
+    if e.leaving<0 then
+      e_rm()
+    end
+    return
+  end
+  local mx, my = FLR(e.x/16), FLR(e.y/16)
+  if e.ty then
+    if e.y == e.ty then
+      e.ty = nil
+      e.spr = "A"
+      e.react = true
+    else
+      e.y = MIN(e.ty,e.y + 4)
+    end
+  end
+end
+
+function jewel_react(e,e_rm)
+  if e.react then
+    collect(e.x/16,e.y/16)
+    e.react = nil
+  end
+end
+
+function game.main:update()
+  jewels:each(jewel_intent)
+  jewels:each(jewel_update)
+  jewels:each(jewel_react)
+  for i=1,9 do
+    if map[i] and not map[i][0] then
+      new_jewel(i,0)
+    end
+  end
+end
+
+function draw_score()
+  COLOUR(11)
+  PANEL(0,0,W,13)
+  COLOUR(0)
+  PRINT("SCORE", W/4, 0, 0, -1)
+  PRINT(score, W/4, L, 0, -1)
+  draw_hiscore()
+end
+
+function draw_hiscore()
+  COLOUR(0)
+  PRINT("HI", 3*W/4, 0, 0, -1)
+  PRINT(hi, 3*W/4, L, 0, -1)
+end
+
+function game.main:draw()
+  BORDER(bg)
+  CLS(11)
+  COLOUR(0)
+  draw_scene()
+  draw_score()
+end
+
+function same_colour(x,y,e)
+  return map[x] and map[x][y] and map[x][y].c == e.c
+end
+
+function collect(mx, my, nocheck, s)
+  if not map[mx] then
+    return
+  end
+  local e = map[mx][my]
+  if not e then
+    return
+  end
+  if not s then
+    s = 0
+  end
+  local u,r,d,l = same_colour(mx,my-1,e), same_colour(mx+1,my,e), same_colour(mx,my+1,e), same_colour(mx-1,my,e)
+  local ok = (u and d) or (l and r)
+  ok = ok or (r and same_colour(mx+2,my,e))
+  ok = ok or (l and same_colour(mx-2,my,e))
+  ok = ok or (u and same_colour(mx,my-2,e))
+  ok = ok or (d and same_colour(mx,my+2,e))
+  if not nocheck and not ok then return end
+  e.leaving = 1
+  score = score + s
+  map[mx][my] = nil
+  if r then collect(mx+1, my, true, s+10) end
+  if l then collect(mx-1, my, true, s+10) end
+  if d then collect(mx, my+1, true, s+10) end
+  if u then collect(mx, my-1, true, s+10) end
+end
+
+function game.main:touch(x, y, isNew)
+  if isNew then
+    local mx, my = FLR((x+8)/16), FLR(y/16)
+    collect(mx,my,true)
+  end
+end
+
+return game

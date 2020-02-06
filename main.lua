@@ -1,6 +1,5 @@
 -- TODO detect installed carts somehow
 
-
 function love.load()
   -- Load the main console API.
 
@@ -8,25 +7,27 @@ function love.load()
 
   function n.get_cart(cartid)
     if (not n.carts[cartid]) then
-      local path = "carts/"..cartid
-      print(love.filesystem.getRealDirectory(path))
-      print(path)
-      local realpath = love.filesystem.getRealDirectory(path).."/"..path
-      local f, msg = loadfile(realpath,"t",n.environment())
-      if (f) then
-        n.carts[cartid] = f()
-        n.api.LOG("Loaded "..path.." from "..realpath)
+      local path = "carts/"..cartid..".n83"
+      print("Reading "..path)
+      local chunk = love.filesystem.read(path)
+      if (chunk) then
+        cur_env = n.environment()
+        -- this is kind of horrible but works for the moment
+        n.carts[cartid] = loadstring("setfenv(1,cur_env)\n"..chunk)()
+        n.api.LOG("Loaded "..path)
       else
-        n.api.LOG("Couldn't find ",path," at "..realpath)
-        n.api.LOG("Message:",msg)
+        n.api.LOG("Couldn't find ",path)
       end
     end
     return n.carts[cartid]
   end
 
   for k,v in pairs(love.filesystem.getDirectoryItems("carts")) do
-    n.api.LOG("loading "..v)
-    n.get_cart(v)
+    if v:sub(-4)==".n83" then
+      v = v:sub(1,-5)
+      n.api.LOG("loading "..v)
+      n.get_cart(v)
+    end
   end
 
   for k,v in pairs(arg) do

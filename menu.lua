@@ -7,7 +7,7 @@ menu = {
   topY = 0,
   windowY = 0,
   boxSize = 0,
-  separation = 4*system_font_size,
+  separation = 4*n.api.L,
 }
 menu.__index = menu
 
@@ -28,10 +28,10 @@ function menu:init(sortFn)
   for i,k in pairs(self.enum) do
     self.enumY[i] = y
     self.itemsSplit[k] = n.api.SPLIT(self.items[k], self.width, true)
-    y = y + (#self.itemsSplit[k]+1)*system_line_height
+    y = y + (#self.itemsSplit[k]+1)*n.api.L
   end
   self.totalHeight = y
-  self.centreY = n.api.H/2 - system_line_height
+  self.centreY = n.api.H/2 - n.api.L
   self.windowY = 100
 end
 
@@ -41,11 +41,11 @@ function menu:draw()
     local k = self.enum[i]
     local l = self.itemsSplit[k]
     local y = self.scrollY+self.enumY[i]
-    if y>-(self.windowY+system_line_height) and y<self.windowY then
+    if y>-(self.windowY+n.api.L) and y<self.windowY then
       if ((y>=0 or i==#self.items) and not self.choice) then
         self.choice = k
         self.boxY = y+self.centreY
-        self.boxSize = system_line_height*(1+#l)
+        self.boxSize = n.api.L*(1+#l)
         n.api.COLOUR()
         n.api.RECT(10,y+self.centreY,n.api.W-20,self.boxSize)
         n.api.PRINTLINES(l, n.api.W/2, y+8+self.centreY, 0, 0)

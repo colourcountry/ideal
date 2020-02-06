@@ -1,11 +1,11 @@
 love.window.setMode(800,600,{fullscreen=false, resizable = true, highdpi = true}) -- Just to make the screen resizable, and this method works with HighDpi
-love.graphics.setDefaultFilter("nearest")
+--love.graphics.setDefaultFilter("nearest")
 screenW,screenH = love.graphics.getDimensions()
 
-system_font=love.graphics.newImageFont("nemo83font.png",
+system_font=love.graphics.newImageFont("nemo91font.png",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- .,@")
-system_font_size=6
-system_line_height=6
+system_font_size=24
+system_line_height=24
 
 sprite_font=love.graphics.newImageFont("nemo83sprites.png",
     " @BoA")
@@ -38,7 +38,7 @@ cur_mode = "unset"
 twinkle = 0
 
 canvas = love.graphics.newCanvas(n.api.W,n.api.H)
-scale = math.floor(math.min(screenW/n.api.W , screenH/n.api.H)) -- Scale to the nearest integer
+scale = math.min((screenW-20)/n.api.W , (screenH-20)/n.api.H) -- Scale to the nearest integer
 translateX = math.floor((screenW - n.api.W * scale)/2)
 translateY = math.floor((screenH - n.api.H * scale)/2)
 
@@ -79,6 +79,9 @@ end
 
 function love.update()
   update_time = love.timer.getTime()
+  if (cart[cur_mode].frame) then
+    cart[cur_mode]:frame()
+  end
   if (love.mouse.isDown(1, 2, 3)) then
     n.api.TOUCH(love.mouse.getX(), love.mouse.getY(), false)
   end
@@ -134,7 +137,9 @@ function love.touchpressed( id, x, y, dx, dy, pressure )
 end
 
 function love.mousepressed( x, y, button, istouch, presses )
-  n.api.TOUCH(x,y,true)
+  if not istouch then
+    n.api.TOUCH(x,y,true)
+  end
 end
 
 n.api.__index = n.api

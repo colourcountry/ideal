@@ -74,11 +74,11 @@ function game.splash:draw()
   draw_hiscore()
   mode_menu:draw()
   COLOUR(11)
-  PANEL(10, H/4-2*LINES, W-20, 5*LINES)
+  PANEL(10, H/4-2*L, W-20, 5*L)
   COLOUR(-1)
   TITLE(game.name, W/2, H/4, 0, 0)
   COLOUR(0)
-  PRINT("SELECT GAME MODE", W/2, H/4+2*LINES, 0, 0)
+  PRINT("SELECT GAME MODE", W/2, H/4+2*L, 0, 0)
   BORDER(bg)
 end
 
@@ -208,14 +208,14 @@ end
 function draw_score()
   COLOUR(0)
   PRINT("SCORE", W/4, 0, 0, -1)
-  PRINT(score, W/4, 8, 0, -1)
+  PRINT(score, W/4, L, 0, -1)
   draw_hiscore()
 end
 
 function draw_hiscore()
   COLOUR(0)
   PRINT("HI", 3*W/4, 0, 0, -1)
-  PRINT(hi, 3*W/4, 8, 0, -1)
+  PRINT(hi, 3*W/4, L, 0, -1)
 end
 
 function game.main:draw()

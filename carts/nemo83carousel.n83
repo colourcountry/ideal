@@ -1,8 +1,10 @@
 c = {
   name="Carousel",
   start_mode="splash",
-  hidden=true
+  hidden=true,
 }
+
+DATA_LEAK_TEST = "leaking"
 
 c.splash = NEWMODE()
 c.main = NEWMODE()
@@ -37,7 +39,7 @@ function c.splash:draw()
   end
   for i=1, letter+1 do
     COLOUR(i%11)
-    PRINT(MODEL,W/2,((-T)%(H*1.2))+i*10-H, 0, 0)
+    PRINT(MODEL,W/2,((-T)%(H*1.2))+i*L-H, 0, 0)
   end
 end
 

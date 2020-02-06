@@ -1,19 +1,20 @@
 api = {
   MODEL="NEMO-83",
   MODELCONTACT="NEMO83@COLOURCOUNTRY.NET",
-  W=144,
-  H=240,
+  W=144*4,
+  H=240*4,
   T=0,
-  LINES=system_line_height,
+  L=system_line_height,
   PAIRS=pairs,
   pairs=pairs, -- allow this one lowercase function because it's fundamental to lua
+  EXEC=loadstring, -- need this to load stuff in the first place
   STR=tostring,
   FLR=math.floor,
   CEIL=math.ceil,
   MAX=math.max,
   MIN=math.min,
   ABS=math.abs,
-  RND=math.random,
+  RND=love.math.random,
   SQRT=math.sqrt,
 }
 
@@ -128,7 +129,7 @@ end
 sprts = {}
 texts = {}
 
-function api.PRINT(strg, x, y, anchor_x, anchor_y)
+function print_string(strg, x, y, anchor_x, anchor_y)
   if (not strg) then
     strg = "-"
   end
@@ -155,8 +156,12 @@ end
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
   love.graphics.push()
   love.graphics.scale(2)
-  api.PRINT(strg, x/2, y/2, anchor_x, anchor_y)
+  print_string(strg, x/2, y/2, anchor_x, anchor_y)
   love.graphics.pop()
+end
+
+function api.PRINT(strg, x, y, anchor_x, anchor_y)
+  print_string(strg, x, y, anchor_x, anchor_y)
 end
 
 function print_text(text, x, y, anchor_x, anchor_y)
@@ -230,7 +235,7 @@ function api.CLS(bg)
 end
 
 function api.EXIT()
-  cart = n.get_cart("__carousel.n83")
+  cart = n.get_cart("nemo83carousel")
   cart.carts = n.carts -- carousel has secret access to this
   cart.switch_cart = n.switch_cart
   cart.quit = love.event.quit
@@ -239,7 +244,7 @@ function api.EXIT()
 end
 
 function api.DIE(msg)
-  cart = n.get_cart("__error.n83")
+  cart = n.get_cart("nemo83error")
   cart.msg = msg
   cart.quit = love.event.quit
   api.RESTART()
@@ -284,9 +289,11 @@ function api.DIRECTION(x,y)
   return x/a, y/a, a
 end
 
-function api.TODAY()
+function api.RNDTODAY()
   local d = tonumber(os.date("%Y%m%d"))
-  love.math.setRandomSeed(d)
+  api.LOG("Resetting RNG to "..tostring(d))
+  love.math.setRandomSeed(5)
+  return d
 end
 
 return api
