@@ -1,0 +1,32 @@
+c = {
+  name="Display test",
+  start_mode="test",
+  hidden=true,
+}
+
+c.test = NEWMODE()
+
+function c:start()
+end
+
+function c.test:draw()
+  BORDER(5)
+  COLOUR(0,8)
+  CLS()
+  PRINT("ORIGIN",0,0,-1,-1)
+  PRINT("NEXT LINE",0,L,-1,-1)
+  PRINT("ANOTHER LINE")
+  PRINT("ANOTHER LINE")
+  PRINT("LEFT",0,H/2,-1,0)
+  PRINT("RIGHT",W,H/2,1,0)
+  PRINT(STR(W))
+  PRINT("TOP",W/2,0,0,-1)
+  PRINT("BOTTOM",W/2,H-L,0,1)
+  PRINT(STR(H),W/2,H,0,1)
+  for i=-1,11 do
+    COLOUR(i)
+    PRINT("COLOUR "..STR(i),W/2,H/4+L*i,0,0)
+  end
+end
+
+return c

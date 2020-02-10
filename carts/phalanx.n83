@@ -107,8 +107,8 @@ function game.main:start()
   player = ENT(W/2, H-16, 8, "A")
   score = 0
   recoil = 0
-  mobs = self:setup_mobs()
-  flags = self:setup_flags()
+  mobs = self.setup_mobs()
+  flags = self.setup_flags()
   bullets = LOOP()
   super_bullets = LOOP()
   bg = FLR(RND(9))
@@ -121,9 +121,9 @@ end
 function game.main:setup_mobs()
   local mobs = LOOP()
   mob_dx = 1
-  for i=0,6 do
-    for j=0,3 do
-      mobs:add( ENT(12+i*18,20+j*18, 8, "B") )
+  for i=0,4 do
+    for j=0,4 do
+      mobs:add( ENT(12+i*18,20+j*18, 8, "B", j+i) )
     end
   end
   return mobs
@@ -231,10 +231,10 @@ function game.main:touch(x, y, isNew)
   local dx, dy = DIRECTION(x-player.x, y-player.y)
   local ox = player.x
   if (dx>0) then
-    player.x = player.x+3
+    player.x = player.x+1
   end
   if (dx<0) then
-    player.x = player.x-3
+    player.x = player.x-1
   end
   if (not player:is_on_screen()) then
     player.x = ox
@@ -246,8 +246,8 @@ function game.main:touch(x, y, isNew)
   score = MAX(0, score-10)
   recoil=10
   local b = ENT(player.x, player.y-player.r, 4, "o")
-  b.dx = dx*4
-  b.dy = dy*4
+  b.dx = dx
+  b.dy = dy
   bullets:add(b)
 end
 

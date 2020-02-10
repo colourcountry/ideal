@@ -124,7 +124,8 @@ function new_room()
     e = map:set(8,j,"B",10)
     e.name = "WALL"
   end
-  map:centre(W/2,H/3)
+  map:centre(W/2,H/3+2*L)
+  LOG(map.sx,map.sy)
 end
 
 function random_area()
@@ -224,7 +225,7 @@ function game.main:touch(x, y, isNew)
     if active_choice then
       active_choice.e.x = x
       active_choice.e.y = y
-      map:highlight(x,y)
+      map:highlight(map:coord(x,y))
       map:zone(
         active_choice.z.x,
         active_choice.z.y,

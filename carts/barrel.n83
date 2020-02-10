@@ -1,0 +1,197 @@
+game = {
+  start_mode="splash",
+  name="BARREL",
+  info="a game of lock picking",
+}
+
+empty = LOOP() -- convenience
+
+game.splash = NEWMODE()
+game.main = NEWMODE()
+game.over = NEWMODE()
+game.instructions = NEWMODE()
+
+bg = 8
+hi = 0
+msg = ""
+debug = false
+map = MAP()
+yesterday = 0
+
+function get_time()
+  local s = FLR(T/60)
+  local m,sm = FLR(s/60),s%60
+  return STR(m)..":"..("00"..STR(sm)):sub(-2)
+end
+
+function draw_score()
+  COLOUR(11)
+  COLOUR(0)
+  PRINT("TIME", W/4, 0, 0, -1)
+  PRINT(get_time(), W/4, L, 0, -1)
+  draw_hiscore()
+end
+
+function draw_hiscore()
+  COLOUR(0)
+  PRINT("BEST", 3*W/4, 0, 0, -1)
+  PRINT(hi, 3*W/4, L, 0, -1)
+end
+
+function draw_scene(text_colour)
+  map:draw(text_colour)
+  COLOUR(0)
+  PRINT(msg,W/2,H-12,0,0)
+end
+
+letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+function new_map(size)
+  map:empty()
+
+  local c = size
+  local x = 1
+  local m = {}
+  for i=1,size do
+    INSERT(m,{})
+    for j=1,size do
+      INSERT(m[i], x)
+      c = c - 1
+      if c==0 then
+        c = size-1
+        x = x + 1
+      end
+    end
+  end
+
+  local n = {}
+  for i=1,size do
+    INSERT(n,{})
+    for j=1,size do
+      INSERT(n[i],m[j][i])
+    end
+    SHUFFLE(n[i])
+  end
+  SHUFFLE(n)
+  LOG(n)
+
+  local o = RND(x)
+
+  for i=1,size do
+    for j=1,size do
+      local c = (n[i][j]+o)%x
+      local e = map:set(i,j,"B",c)
+      e.text = STR(c)
+    end
+  end
+  map:centre(W/2,H/3)
+end
+
+function game:start()
+  score = 0
+  flags = {}
+  mode_menu = MENU({
+    main="START",
+    instructions="INSTRUCTIONS"
+  })
+end
+
+------------------------------------------------------------------- splash
+
+function game.splash:start()
+  choices = {}
+  msg = DATA_LEAK_TEST
+  new_map(7)
+end
+
+function game.splash:touch(x, y, isNew)
+  local t = mode_menu:touch(x, y, isNew)
+  if (t) then
+    MODE(t)
+  end
+end
+
+function game.splash:draw()
+  CLS(bg)
+  draw_scene()
+  draw_hiscore()
+  mode_menu:draw()
+  COLOUR(11)
+  PANEL(10, H/4-2*L, W-20, 5*L)
+  COLOUR(-1)
+  TITLE(game.name, W/2, H/4, 0, 0)
+  COLOUR(0)
+  PRINT("SELECT GAME MODE", W/2, H/4+2*L, 0, 0)
+  BORDER(bg)
+end
+
+------------------------------------------------------------------- main
+
+function game.main:start()
+  score = 0
+  left = 10
+  msg = "FIND THE ITEM"
+  new_map(7)
+  bg = FLR(RND(9))
+end
+
+function game.main:draw()
+  BORDER(bg)
+  CLS(bg)
+  COLOUR(0)
+  draw_scene(0)
+  draw_score()
+end
+
+function game.over:start()
+  if score > hi then
+    hi = score
+    msg = "NEW BEST TIME"
+  else
+    msg = "GAME OVER"
+  end
+end
+
+function game.over:touch(x,y,isNew)
+  MODE("splash")
+end
+
+function game.over:draw()
+  BORDER(bg)
+  CLS(bg)
+  COLOUR(0)
+  draw_scene(0)
+  draw_score()
+end
+
+----------------------------------------------------------------------- info
+
+instructions = {
+  {"",0,  "OPEN THE COMBINATION LOCK IN THE SHORTEST TIME BY FINDING THE SYMBOL "..
+          "THAT APPEARS ON EVERY BARREL"},
+  {"B",3, "THIS IS A TUMBLER OR WHATEVER YOU CALL THE THING INSIDE A LOCK"},
+  {"A",4,  "THIS IS A SPACESHIP WHICH YOU WILL NOT FIND IN THIS GAME"},
+  {"",5,   "GOOD LUCK IN YOUR QUEST, COMMANDER"},
+  {"",0,   "BTW YOU ARE A GIRL"}
+}
+
+function game.instructions:draw()
+  CLS(bg)
+  COLOUR(-1)
+  TITLE(game.name, W/2, 0, 0, -1)
+  COLOUR(0)
+  local y = L*4
+  for i=1,#instructions do
+    COLOUR(instructions[i][2])
+    if instructions[i][1]=="" then
+      y = y + L*PRINTLINES(SPLIT(instructions[i][3],W-20,true),10,y)
+    else
+      SPR(instructions[i][1],18,y+2)
+      COLOUR(0)
+      y = y + L*PRINTLINES(SPLIT(instructions[i][3],W-50,true),40,y)
+    end
+    y = y + L
+  end
+  BORDER(bg)
+end
+return game

@@ -8,6 +8,7 @@ DATA_LEAK_TEST = "leaking"
 
 c.splash = NEWMODE()
 c.main = NEWMODE()
+c.test = NEWMODE()
 
 function c:start()
   cartNames = {}
@@ -33,8 +34,8 @@ function c.splash:draw()
   BORDER(0)
   COLOUR(0,11)
   CLS()
-  local letter = FLR(T/4)
-  if (letter>48) then
+  local letter = FLR(T/2)
+  if (letter>50) then
     MODE("main")
   end
   for i=1, letter+1 do
@@ -62,7 +63,7 @@ function c.main:draw()
   CLS()
   m:draw()
   COLOUR()
-  TITLE(modelName, W/2, 24, 0, 0)
+  TITLE(MODEL, W/2, 24, 0, 0)
   COLOUR(4)
   PRINT(msg, W/2, 40, 0, 0)
 end

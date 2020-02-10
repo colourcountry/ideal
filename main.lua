@@ -8,15 +8,20 @@ function love.load()
   function n.get_cart(cartid)
     if (not n.carts[cartid]) then
       local path = "carts/"..cartid..".n83"
-      print("Reading "..path)
+      print(path..": reading file")
       local chunk = love.filesystem.read(path)
       if (chunk) then
         cur_env = n.environment()
         -- this is kind of horrible but works for the moment
-        n.carts[cartid] = loadstring("setfenv(1,cur_env)\n"..chunk)()
-        n.api.LOG("Loaded "..path)
+        local code = loadstring("setfenv(1,cur_env)\n"..chunk)
+        if code then
+          n.carts[cartid] = code()
+          n.api.LOG(path..": loaded successfully")
+        else
+          n.api.LOG(path..": didn't return a callable")
+        end
       else
-        n.api.LOG("Couldn't find ",path)
+        n.api.LOG(path..": not found")
       end
     end
     return n.carts[cartid]

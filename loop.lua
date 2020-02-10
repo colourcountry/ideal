@@ -4,6 +4,7 @@ loop = {
 loop.__index = loop
 
 function loop:add(x)
+  if not x then return end
   if not self.length or self.length==0 then
     self.path={[1]=1}
     self.rpath={[1]=1}

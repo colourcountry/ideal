@@ -1,10 +1,10 @@
 api = {
   MODEL="NEMO-83",
   MODELCONTACT="NEMO83@COLOURCOUNTRY.NET",
-  W=144*4,
-  H=240*4,
+  W=144,
+  H=240,
   T=0,
-  L=system_line_height,
+  L=6,
   PAIRS=pairs,
   pairs=pairs, -- allow this one lowercase function because it's fundamental to lua
   EXEC=loadstring, -- need this to load stuff in the first place
@@ -16,7 +16,12 @@ api = {
   ABS=math.abs,
   RND=love.math.random,
   SQRT=math.sqrt,
+  INSERT=table.insert,
+  REMOVE=table.remove
 }
+
+cur_x = 0
+cur_y = 0
 
 function dumpobj(o)
    if type(o) == 'table' then
@@ -101,9 +106,9 @@ function api.MENU(items)
   return o
 end
 
-function api.TOUCH(x, y, isNew)
+function api.TOUCH(x, y, isNew, isRelease)
   if (cart[cur_mode].touch) then
-    cart[cur_mode]:touch(math.floor((x-translateX)/scale),math.floor((y-translateY)/scale), isNew)
+    cart[cur_mode]:touch(x, y, isNew, isRelease)
   end
 end
 
@@ -150,7 +155,7 @@ function api.SPR(spr, x, y)
     sprts[spr] = love.graphics.newText(sprite_font, spr)
   end
   love.graphics.setColor(cur_fg)
-  love.graphics.draw(sprts[spr],x-8,y-8)
+  love.graphics.draw(sprts[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
 end
 
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
@@ -161,23 +166,28 @@ function api.TITLE(strg, x, y, anchor_x, anchor_y)
 end
 
 function api.PRINT(strg, x, y, anchor_x, anchor_y)
+  if not x then x=cur_x end
+  if not y then y=cur_y+api.L*2 end
   print_string(strg, x, y, anchor_x, anchor_y)
 end
 
 function print_text(text, x, y, anchor_x, anchor_y)
-  local width = text:getWidth()
+  local width = text:getWidth()/units
   local height = system_font_size
   local ax =     x-(anchor_x+1)*width/2
   local ay =     y-(anchor_y+1)*height/2
+  cur_x = ax
+  cur_y = ay
 
   love.graphics.setColor(cur_fg)
-  love.graphics.draw(text,ax,ay)
+  love.graphics.draw(text,ax*units,ay*units)
 end
 
 function api.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
-  for i, v in pairs(strgs) do
-    api.PRINT(v, x, y+(i-1)*system_line_height, anchor_x, anchor_y)
+  for i=1,#strgs do
+    api.PRINT(strgs[i], x, y+(i-1)*system_font_size, anchor_x, anchor_y)
   end
+  return #strgs
 end
 
 function api.SPLIT(strg, pixels, atSpace)
@@ -205,7 +215,7 @@ function api.PANEL(x, y, w, h)
     h=w
   end
   love.graphics.setColor(cur_fg)
-  love.graphics.rectangle("fill",x,y,w,h)
+  love.graphics.rectangle("fill",x*units,y*units,w*units,h*units)
 end
 
 function api.RECT(x, y, w, h)
@@ -213,17 +223,17 @@ function api.RECT(x, y, w, h)
     h=w
   end
   love.graphics.setColor(cur_fg)
-  love.graphics.rectangle("line",x,y,w,h)
+  love.graphics.rectangle("line",x*units,y*units,w*units,h*units)
 end
 
 function api.DISC(x, y, r)
   love.graphics.setColor(cur_fg)
-  love.graphics.circle("fill",x,y,r)
+  love.graphics.circle("fill",x*units,y*units,r*units)
 end
 
 function api.CIRCLE(x, y, r)
   love.graphics.setColor(cur_fg)
-  love.graphics.circle("line",x,y,r)
+  love.graphics.circle("line",x*units,y*units,r*units)
 end
 
 
@@ -292,8 +302,15 @@ end
 function api.RNDTODAY()
   local d = tonumber(os.date("%Y%m%d"))
   api.LOG("Resetting RNG to "..tostring(d))
-  love.math.setRandomSeed(5)
+  love.math.setRandomSeed(d)
   return d
+end
+
+function api.SHUFFLE(array)
+  for i=1,#array-1 do
+    local j = math.random(i,#array)
+    array[i], array[j] = array[j], array[i]
+  end
 end
 
 return api

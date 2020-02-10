@@ -13,17 +13,20 @@ bg = 8
 hi = 0
 msg = ""
 debug = false
+map = MAP()
 
 function draw_scene()
-  jewels:each(function(e, rm)
+  map:draw()
+  falling:each(function(e)
     e:draw()
   end)
+
   COLOUR(0)
   if map and debug then
     for i=1,9 do
       for j=1,14 do
-        if map[i] and map[i][j] then
-          local e = map[i][j]
+        local e = map:get(i,j)
+        if e then
           COLOUR(e.c)
           if e.ty then
             PANEL(e.x+j-8,e.y,1,(e.ty-e.y))
@@ -38,7 +41,7 @@ end
 function game:start()
   score = 0
   flags = {}
-  jewels = empty
+  falling = empty
   mode_menu = MENU({
     main="START"
   })
@@ -75,86 +78,53 @@ end
 
 function game.main:start()
   score = 0
-  react = LOOP()
+  falling = LOOP()
   self:setup_jewels()
   bg = FLR(RND(9))
 end
 
 function new_jewel(mx,my)
+  if map:get(mx,my) then return end
   local maxcol = 4+FLR(score/4000)
-  local e = ENT(mx*16,my*16,16,"B",(RND(maxcol)*2)%11-1)
-  jewels:add( e )
-  map[mx][my] = e
+  map:set(mx,my,"B",(RND(maxcol)*2)%11-1)
 end
 
 function game.main:setup_jewels()
-  jewels = LOOP()
-  map = {}
+  map:empty()
   for i=1,8 do
-    map[i] = {}
     for j=3,14 do
       new_jewel(i,j)
     end
   end
+  map:centre(W/2,H/2)
   return jewels, map
 end
 
-function jewel_intent(e,e_rm)
-  e.react = nil
-  e.spr = "B"
-  if e.leaving then
-    return
-  end
-  local by = e.y
-  if e.ty and e.ty>e.y then
-    by = e.ty
-  end
-  local mx, my = FLR(e.x/16), FLR(by/16)
-  local tmy = my
-  while tmy<14 and not map[mx][tmy+1] do
-    tmy = tmy + 1
-    e.ty = tmy*16
-  end
-  map[mx][my] = nil
-  map[mx][tmy] = e
-end
-
-function jewel_update(e,e_rm)
-  if e.leaving then
-    e.leaving = e.leaving - 1
-    if e.leaving<0 then
-      e_rm()
-    end
-    return
-  end
-  local mx, my = FLR(e.x/16), FLR(e.y/16)
-  if e.ty then
-    if e.y == e.ty then
-      e.ty = nil
-      e.spr = "A"
-      e.react = true
-    else
-      e.y = MIN(e.ty,e.y + 4)
-    end
-  end
-end
-
-function jewel_react(e,e_rm)
-  if e.react then
-    collect(e.x/16,e.y/16)
-    e.react = nil
-  end
-end
 
 function game.main:update()
-  jewels:each(jewel_intent)
-  jewels:each(jewel_update)
-  jewels:each(jewel_react)
-  for i=1,9 do
-    if map[i] and not map[i][0] then
-      new_jewel(i,0)
+  map:each(function(e,mx,my)
+    if my<map.sy then
+      local below = map:get(mx,my+1)
+      if not below then
+        map:free(mx,my)
+        falling:add( e )
+      end
     end
-  end
+  end)
+  falling:each(function(e,e_rm)
+    local mx,my = map:coord(e.x, e.y+8)
+    local below = map:get(mx,my)
+    if my==map.sy+1 or below then
+      nmx, nmy = map:grab(e)
+      e_rm()
+      check_line(nmx,nmy,true)
+    else
+      e.y = e.y + 2
+      if e.y > H then
+        e_rm()
+      end
+    end
+  end)
 end
 
 function draw_score()
@@ -180,41 +150,66 @@ function game.main:draw()
   draw_score()
 end
 
-function same_colour(x,y,e)
-  return map[x] and map[x][y] and map[x][y].c == e.c
+function swap(x1,y1,x2,y2)
+  map:swap(x1,y1,x2,y2)
+  collect(x1,y1,true)
+  collect(x2,y2,true)
 end
 
-function collect(mx, my, nocheck, s)
-  if not map[mx] then
-    return
-  end
-  local e = map[mx][my]
-  if not e then
-    return
-  end
-  if not s then
-    s = 0
-  end
-  local u,r,d,l = same_colour(mx,my-1,e), same_colour(mx+1,my,e), same_colour(mx,my+1,e), same_colour(mx-1,my,e)
-  local ok = (u and d) or (l and r)
-  ok = ok or (r and same_colour(mx+2,my,e))
-  ok = ok or (l and same_colour(mx-2,my,e))
-  ok = ok or (u and same_colour(mx,my-2,e))
-  ok = ok or (d and same_colour(mx,my+2,e))
-  if not nocheck and not ok then return end
-  e.leaving = 1
-  score = score + s
-  map[mx][my] = nil
-  if r then collect(mx+1, my, true, s+10) end
-  if l then collect(mx-1, my, true, s+10) end
-  if d then collect(mx, my+1, true, s+10) end
-  if u then collect(mx, my-1, true, s+10) end
+function same_colour(mx,my,e)
+  local o = map:get(mx,my)
+  return o and e and o.c==e.c
 end
 
-function game.main:touch(x, y, isNew)
+function check_line(mx,my,collect)
+  local match = 0
+  h1 = check_direction(mx,my,-1,0)-1
+  h2 = check_direction(mx,my,1,0)
+  if h1+h2>=3 then
+    if collect then
+      for i=mx-h1,mx+h2-1 do
+        map:free(i,my)
+      end
+      match = match + h1 + h2
+    end
+  end
+  v1 = check_direction(mx,my,0,-1)-1
+  v2 = check_direction(mx,my,0,1)
+  if v1+v2>=3 then
+    if collect then
+      for j=my-v1,my+v2-1 do
+        map:free(mx,j)
+      end
+      match = match + v1 + v2
+    end
+  end
+  score = score + match
+  return match
+end
+
+function check_direction(mx,my,dx,dy)
+  local e = map:get(mx,my)
+  local a = 1
+  while same_colour(mx+dx,my+dy,e) do
+    e = map:get(mx+dx,my+dy)
+    mx = mx+dx
+    my = my+dy
+    a = a + 1
+  end
+  return a
+end
+
+function game.main:touch(x, y, isNew, isRelease)
   if isNew then
-    local mx, my = FLR((x+8)/16), FLR(y/16)
-    collect(mx,my,true)
+    dmx, dmy = map:coord(x,y)
+    check_line(dmx,dmy,true)
+  else
+    mx, my = map:coord(x,y)
+  end
+  if isRelease then
+    if not dmx or not dmy then return end
+    if ABS(mx-dmx)+ABS(my-dmy)~=1 then return end
+    --swap(mx,my,dmx,dmy)
   end
 end
 

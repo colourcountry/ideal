@@ -1,5 +1,5 @@
 c = {
-  name="Cafebad",
+  name="Paint",
   start_mode="init",
   init = NEWMODE(),
   paint = NEWMODE()

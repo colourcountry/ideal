@@ -1,15 +1,18 @@
 love.window.setMode(800,600,{fullscreen=false, resizable = true, highdpi = true}) -- Just to make the screen resizable, and this method works with HighDpi
 --love.graphics.setDefaultFilter("nearest")
 screenW,screenH = love.graphics.getDimensions()
+units=4 --convert in-world units (144x240) to pre-scaling screen coords
+
+love.graphics.setLineWidth(units)
 
 system_font=love.graphics.newImageFont("nemo91font.png",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- .,@")
-system_font_size=24
-system_line_height=24
+system_font_size=6
 
-sprite_font=love.graphics.newImageFont("nemo83sprites.png",
+sprite_font=love.graphics.newImageFont("nemo91sprites.png",
     " @BoA")
-sprite_font_size=16
+sprite_size=16
+sprite_radius=sprite_size/2
 
 n = {
   api = require("api"),
@@ -18,16 +21,16 @@ n = {
 
 white = {1, 1, 1, 1}
 colours = {
-  {1, 0.5, 0.5, 1},
-  {1, 0.8, 0.5, 1},
-  {1, 1, 0.5, 1},
   {0.8, 1, 0.5, 1},
   {0.5, 1, 0.5, 1},
-  {0.5, 1, 1, 1},
+  {0.5, 1, 0.9, 1},
   {0.5, 0.8, 1, 1},
   {0.5, 0.5, 1, 1},
   {0.8, 0.5, 1, 1},
   {1, 0.5, 0.8, 1},
+  {1, 0.3, 0.5, 1},
+  {1, 0.6, 0.5, 1},
+  {1, 0.9, 0.5, 1},
   {0, 0, 0, 1}
 }
 colours[0] = white
@@ -37,10 +40,12 @@ cur_bg = colours[11]
 cur_mode = "unset"
 twinkle = 0
 
-canvas = love.graphics.newCanvas(n.api.W,n.api.H)
-scale = math.min((screenW-20)/n.api.W , (screenH-20)/n.api.H) -- Scale to the nearest integer
-translateX = math.floor((screenW - n.api.W * scale)/2)
-translateY = math.floor((screenH - n.api.H * scale)/2)
+unitW = n.api.W*units
+unitH = n.api.H*units
+canvas = love.graphics.newCanvas(unitW,unitH)
+scale = math.min((screenW-20)/n.api.W , (screenH-20)/unitH) -- Scale to the nearest integer
+translateX = math.floor((screenW - unitW * scale)/2)
+translateY = math.floor((screenH - unitH * scale)/2)
 
 function draw()
   love.graphics.setFont(system_font)
@@ -83,12 +88,12 @@ function love.update()
     cart[cur_mode]:frame()
   end
   if (love.mouse.isDown(1, 2, 3)) then
-    n.api.TOUCH(love.mouse.getX(), love.mouse.getY(), false)
+    handle_touch(love.mouse.getX(), love.mouse.getY(), false)
   end
   touches = love.touch.getTouches()
   for k, v in pairs(touches) do
     local x, y = love.touch.getPosition(v)
-    n.api.TOUCH(x, y, false)
+    handle_touch(x,y,false)
   end
   if not cart[cur_mode] then
     n.api.DIE("mode "..cur_mode.." is not defined")
@@ -133,12 +138,28 @@ function love.keypressed(key, scancode, isRepeat)
 end
 
 function love.touchpressed( id, x, y, dx, dy, pressure )
-  n.api.TOUCH(x,y,true)
+  handle_touch(x,y,true)
+end
+
+function love.touchreleased( id, x, y, dx, dy, pressure)
+  handle_touch(x,y,false,true)
+end
+
+function handle_touch(x,y,isNew,isRelease)
+  local mx = (x-translateX)/scale/units
+  local my = (y-translateY)/scale/units
+  n.api.TOUCH(mx,my,isNew,isRelease)
 end
 
 function love.mousepressed( x, y, button, istouch, presses )
   if not istouch then
-    n.api.TOUCH(x,y,true)
+    handle_touch(x,y,true)
+  end
+end
+
+function love.mousereleased( x, y, button, istouch, presses )
+  if not istouch then
+    handle_touch(x,y,false,true)
   end
 end
 
