@@ -26,7 +26,7 @@ function love.load()
 
     cur_env = sys.environment()
     -- this is kind of horrible but works for the moment
-    local code = loadstring("setfenv(1,cur_env)\n"..chunk)
+    local code = loadstring("--"..cartid.."\nsetfenv(1,cur_env)\n"..chunk)
     if not code then
       sys.api.LOG(path,": chunk was not callable")
       return "?CALL"
