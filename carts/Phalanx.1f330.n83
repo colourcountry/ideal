@@ -6,6 +6,7 @@ Cart = {
 }
 
 messages = {
+  credit="OIH 2020",
   select_mode="SELECT GAME MODE",
   clear="STAGE CLEAR",
   eaten="EATEN",
@@ -22,6 +23,7 @@ chars = {
 empty = LOOP() -- convenience
 
 Splash = MODE()
+Menu = MODE()
 Main = MODE()
 Clear = MODE()
 
@@ -63,29 +65,44 @@ function Cart:START()
   bullets = empty
   super_bullets = empty
   mode_menu = MENU({
+    { name= Main.name,  action=function() GO(Main) end },
     { name= Blocks.name,  action=function() GO(Blocks) end },
     { name= Missiles.name,  action=function() GO(Missiles) end },
     { name= Deflect.name,   action=function() GO(Deflect) end },
     { name= Invisible.name, action=function() GO(Invisible) end },
+    { name= "EJECT", action=EJECT }
   })
   GO(Splash)
 end
 
+function Splash:UPDATE()
+  if T>50 then
+    GO(Menu)
+  end
+end
+
+function Splash:DRAW()
+  CLS()
+  COLOUR(-1)
+  TITLE(UPPER(Cart.name), W/2, H/4, 0, 0)
+  COLOUR(0)
+  PRINT(UPPER(messages.credit), W/2, H-L, 0, 0)
+end
+
 ------------------------------------------------------------------- splash
 
-function Splash:START()
+function Menu:START()
   bullets = empty
   super_bullets = empty
 end
 
-function Splash:TOUCH(x, y, isNew)
+function Menu:TOUCH(x, y, isNew)
   mode_menu:touch(x, y, isNew)
 end
 
-function Splash:DRAW()
-  CLS(bg)
+function Menu:DRAW()
+  CLS()
   draw_scene()
-  draw_hiscore()
   mode_menu:DRAW()
   COLOUR(11)
   BLOCK(10, H/4-2*L, W-20, 5*L)
@@ -253,7 +270,7 @@ function Main:DRAW()
   draw_scene()
 end
 
-function Main:TOUCH(x, y, isNew)
+function Main:TOUCH2(x, y, isNew)
   CLS(bg)
   local dx, dy = DIRECTION(x-player.x, y-player.y)
   local ox = player.x

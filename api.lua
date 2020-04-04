@@ -1,5 +1,5 @@
 api = {
-  MODEL="ENORMAL C",
+  MODEL="IDEAL CT",
   API="n83",
   URL="IDEAL.COLOURCOUNTRY.NET",
   W=144,
@@ -23,16 +23,19 @@ cur_x = 0
 cur_y = 0
 
 function dumpobj(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. '['..k..'] = ' .. dumpobj(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
+  if type(o) == 'table' then
+    if o.LOG then
+     return o:LOG()
+    end
+    local s = '{ '
+    for k,v in pairs(o) do
+       if type(k) ~= 'number' then k = '"'..k..'"' end
+       s = s .. '['..k..'] = ' .. dumpobj(v) .. ','
+    end
+    return s .. '} '
+  else
+    return tostring(o)
+  end
 end
 
 function api.LOG(...)
@@ -193,7 +196,7 @@ function api.CLS()
   love.graphics.clear(cur_bg)
 end
 
-function api.EXIT()
+function api.EJECT()
   cart = sys.get_cart("_carousel."..api.API)
   cart.__carts = sys.carts -- carousel has secret access to this
   cart.__switch = sys.switch_cart
@@ -222,6 +225,7 @@ end
 
 function api.GO(mode)
   cur_mode = mode
+  api.LOG("Entering",mode)
   if mode.START then
     mode:START()
   end

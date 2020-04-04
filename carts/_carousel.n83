@@ -6,7 +6,7 @@ Cart = {
 
 DATA_LEAK_TEST = "leaking"
 
-Splash = MODE()
+Splash = MODE({ name="Splash for "..MODEL })
 
 function Splash:DRAW()
   BORDER(0)
@@ -34,7 +34,7 @@ end
 
 
 
-Main = MODE()
+Main = MODE({ name="Main carousel" })
 
 function Main:UPDATE()
   if (#cartItems==0) then
@@ -65,6 +65,7 @@ end
 
 
 function Cart:START()
+  LOG("Starting Carousel")
   cartItems = {}
   for k,v in ITEMS(self.__carts) do
     if not v.hidden then

@@ -151,7 +151,7 @@ function love.keypressed(key, scancode, isRepeat)
     if cart.SHUTDOWN then
       cart:SHUTDOWN()
     end
-    sys.api.EXIT()
+    sys.api.EJECT()
   end
   local k = keys[scancode]
   if (k and cur_mode.TOUCH) then

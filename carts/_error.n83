@@ -4,6 +4,10 @@ Cart = {
   api="n83"
 }
 
+function Cart:START()
+  GO(Main)
+end
+
 Main = MODE()
 
 function Main:UPDATE()
@@ -25,7 +29,7 @@ end
 
 function Main:TOUCH(x,y,isNew)
   if (isNew) then
-    EXIT()
+    EJECT()
   end
 end
 

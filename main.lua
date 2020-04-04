@@ -85,6 +85,6 @@ function love.load()
   if cart_arg_found then
     sys.switch_cart(cart_arg_found)
   else
-    sys.api.EXIT() -- load carousel
+    sys.api.EJECT() -- load carousel
   end
 end
