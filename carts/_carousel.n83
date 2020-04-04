@@ -6,6 +6,11 @@ Cart = {
 
 DATA_LEAK_TEST = "leaking"
 
+messages = {
+  select="INSERT CARTRIDGE",
+  no_carts="NO CARTRIDGES"
+}
+
 Splash = MODE({ name="Splash for "..MODEL })
 
 function Splash:DRAW()
@@ -38,24 +43,32 @@ Main = MODE({ name="Main carousel" })
 
 function Main:UPDATE()
   if (#cartItems==0) then
-    ERROR("INSERT CART")
+    ERROR(messages.no_carts)
     return
   end
 end
 
 function Main:DRAW()
-  BORDER(5)
-  COLOUR(3,4)
+  BORDER(7)
+  COLOUR(0,7)
   CLS()
   DRAW(m)
   COLOUR()
   TITLE(MODEL, W/2, 24, 0, 0)
-  COLOUR(4)
+  COLOUR(0)
   PRINT(msg, W/2, 40, 0, 0)
 end
 
-function Main:TOUCH(x,y,isNew)
-  m:touch(x, y, isNew)
+function Main:TOUCH(x,y)
+  m:handle_touch(x, y)
+end
+
+function Main:DRAG(ox,oy,x,y)
+  m:handle_drag(ox,oy,x,y)
+end
+
+function Main:RELEASE(ox,oy,x,y)
+  m:handle_release(ox,oy,x,y)
 end
 
 
@@ -72,13 +85,15 @@ function Cart:START()
       cartItems[#cartItems+1] = {
         id=k,
         name=v.name:upper(),
+        icon=v.icon,
+        colour=5,
         action=function() self.__switch(k) end
       }
     end
   end
   LOG("Found ",#cartItems," carts")
   m = MENU(cartItems)
-  msg = "SELECT CARTRIDGE"
+  msg = messages.select
   GO(Splash)
 end
 

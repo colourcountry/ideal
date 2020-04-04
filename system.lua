@@ -59,6 +59,8 @@ colours[0] = white
 cur_fg = colours[0]
 cur_bg = colours[11]
 cur_mode = "unset"
+cur_touches = {}
+mouse_touch_id = "MOUSE"
 twinkle = 0
 
 unitW = sys.api.W*units
@@ -113,12 +115,12 @@ function love.update()
     cur_mode:frame()
   end
   if (love.mouse.isDown(1, 2, 3)) then
-    handle_touch(love.mouse.getX(), love.mouse.getY(), false)
+    handle_drag(mouse_touch_id,love.mouse.getX(),love.mouse.getY())
   end
   touches = love.touch.getTouches()
-  for k, v in pairs(touches) do
-    local x, y = love.touch.getPosition(v)
-    handle_touch(x,y,false)
+  for id, v in pairs(touches) do
+    local x,y = love.touch.getPosition(v)
+    handle_drag(id,x,y)
   end
   if cur_mode.UPDATE then
     cur_mode:UPDATE()
@@ -163,28 +165,65 @@ function love.keypressed(key, scancode, isRepeat)
 end
 
 function love.touchpressed( id, x, y, dx, dy, pressure )
-  handle_touch(x,y,true)
+  handle_touch(id,x,y)
 end
 
 function love.touchreleased( id, x, y, dx, dy, pressure)
-  handle_touch(x,y,false,true)
+  handle_release(id,x,y)
 end
 
-function handle_touch(x,y,isNew,isRelease)
+function handle_touch(id,x,y)
+  cur_touches[id] = {
+    x=x, y=y,
+    ox=x, oy=y
+  }
+  local mx = (cur_touches[id].x-translateX)/scale/units
+  local my = (cur_touches[id].y-translateY)/scale/units
+  sys.api.LOG("New touch",id,"currently",cur_touches)
+  sys.api.TOUCH(mx,my)
+end
+
+function handle_drag(id,x,y)
+  if cur_touches[id] then
+    cur_touches[id].x = x
+    cur_touches[id].y = y
+  else
+    cur_touches[id] = {
+      x=x, y=y,
+      ox=x, oy=y
+    }
+  end
   local mx = (x-translateX)/scale/units
   local my = (y-translateY)/scale/units
-  sys.api.TOUCH(mx,my,isNew,isRelease)
+  local mox = (cur_touches[id].ox-translateX)/scale/units
+  local moy = (cur_touches[id].oy-translateY)/scale/units
+  sys.api.DRAG(mox,moy,mx,my)
+end
+
+function handle_release(id,x,y)
+  local mx = (x-translateX)/scale/units
+  local my = (y-translateY)/scale/units
+  if cur_touches[id] then
+    local mox = (cur_touches[id].ox-translateX)/scale/units
+    local moy = (cur_touches[id].oy-translateY)/scale/units
+    sys.api.LOG("Releasing touch id",id)
+    sys.api.RELEASE(mox,moy,mx,my)
+  else
+    sys.api.LOG("Releasing unknown touch id",id)
+    sys.api.RELEASE(mx,my,mx,my)
+  end
+  cur_touches[id] = nil
 end
 
 function love.mousepressed( x, y, button, istouch, presses )
   if not istouch then
-    handle_touch(x,y,true)
+    handle_touch(mouse_touch_id,x,y)
   end
 end
 
 function love.mousereleased( x, y, button, istouch, presses )
   if not istouch then
-    handle_touch(x,y,false,true)
+    handle_release(mouse_touch_id,x,y)
   end
 end
 

@@ -81,8 +81,9 @@ function Splash:UPDATE()
 end
 
 function Splash:DRAW()
+  COLOUR(-1,8)
   CLS()
-  COLOUR(-1)
+  BORDER(11)
   TITLE(UPPER(Cart.name), W/2, H/4, 0, 0)
   COLOUR(0)
   PRINT(UPPER(messages.credit), W/2, H-L, 0, 0)
@@ -95,8 +96,16 @@ function Menu:START()
   super_bullets = empty
 end
 
-function Menu:TOUCH(x, y, isNew)
-  mode_menu:touch(x, y, isNew)
+function Menu:TOUCH(x, y)
+  mode_menu:handle_touch(x, y)
+end
+
+function Menu:DRAG(ox, oy, x, y)
+  mode_menu:handle_drag(ox, oy, x, y)
+end
+
+function Menu:RELEASE(ox, oy, x, y)
+  mode_menu:handle_release(ox, oy, x, y)
 end
 
 function Menu:DRAW()
@@ -109,7 +118,6 @@ function Menu:DRAW()
   TITLE(UPPER(Cart.name), W/2, H/4, 0, 0)
   COLOUR(0)
   PRINT(messages.select_mode, W/2, H/4+2*L, 0, 0)
-  BORDER(bg)
 end
 
 ------------------------------------------------------------------- clear
@@ -125,10 +133,8 @@ function Clear:DRAW()
   end
 end
 
-function Clear:TOUCH(x, y, isNew)
-  if isNew then
-    GO(Splash)
-  end
+function Clear:TOUCH(x, y)
+  GO(Splash)
 end
 
 ------------------------------------------------------------------- main
@@ -270,8 +276,7 @@ function Main:DRAW()
   draw_scene()
 end
 
-function Main:TOUCH(x, y, isNew)
-  CLS(bg)
+function Main:DRAG(x, y)
   local dx, dy, d = DIRECTION(x-player.x, y-player.y)
   local ox = player.x
   local pdx = MIN(d/10,3)

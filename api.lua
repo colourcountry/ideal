@@ -1,11 +1,12 @@
 api = {
-  MODEL="IDEAL CT",
+  MODEL="IDEAL-C4",
   API="n83",
   URL="IDEAL.COLOURCOUNTRY.NET",
   W=144,
   H=240,
   T=0,
   L=6,
+  S=16,
   EXEC=loadstring, -- need this to load stuff in the first place
   STR=tostring,
   FLR=math.floor,
@@ -23,6 +24,9 @@ cur_x = 0
 cur_y = 0
 
 function dumpobj(o)
+  if o == nil then
+    return "nil"
+  end
   if type(o) == 'table' then
     if o.LOG then
      return o:LOG()
@@ -58,9 +62,21 @@ function api.ITEMS(x)
 end
 
 
-function api.TOUCH(x, y, isNew, isRelease)
+function api.TOUCH(x, y)
   if cur_mode.TOUCH then
-    cur_mode:TOUCH(x, y, isNew, isRelease)
+    cur_mode:TOUCH(x, y)
+  end
+end
+
+function api.DRAG(ox, oy, x, y)
+  if cur_mode.DRAG then
+    cur_mode:DRAG(ox, oy, x, y)
+  end
+end
+
+function api.RELEASE(ox, oy, x, y)
+  if cur_mode.RELEASE then
+    cur_mode:RELEASE(ox, oy, x, y)
   end
 end
 
@@ -70,14 +86,15 @@ function api.BORDER(c)
 end
 
 function api.COLOUR(fg, bg)
-  if fg and colours[math.floor(fg)] then
-    cur_fg = colours[math.floor(fg)]
+  fg = (fg and math.floor(fg)) or -1
+  bg = (bg and math.floor(bg)) or -1
+  if colours[fg] then
+    cur_fg = colours[fg]
   else
     cur_fg = colours[math.floor((api.T/5+twinkle)%11)]
     twinkle = twinkle + 1
   end
-  if (bg) then
-    bg = math.floor(bg)
+  if colours[bg] then
     cur_bg = {colours[bg][1]/4, colours[bg][2]/4, colours[bg][3]/4, 1}
   end
   love.graphics.setColor(cur_fg)
