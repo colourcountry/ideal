@@ -21,7 +21,7 @@ function draw_paintbox()
   for i=1,10 do
     COLOUR(i)
     local x = (i-1)*pot_size
-    PANEL(x,0,pot_size)
+    BLOCK(x,0,pot_size)
   end
 end
 
@@ -48,7 +48,7 @@ function c.paint:draw()
       y = "0"
     end
     COLOUR(11)
-    PANEL(0,i*20-6,W,12)
+    BLOCK(0,i*20-6,W,12)
     COLOUR(0)
     PRINT(STR(t[i][1])..","..STR(t[i][2]).." "..y,W/2,i*20,0,0)
   end

@@ -1,0 +1,5 @@
+return {
+  name="_test_extra_stuff",
+  icon="1f330",
+  api="n83"
+}

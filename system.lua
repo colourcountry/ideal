@@ -9,12 +9,33 @@ system_font=love.graphics.newImageFont("nemo91font.png",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- .,@")
 system_font_size=6
 
-sprite_font=love.graphics.newImageFont("nemo91sprites.png",
-    " @BoA")
 sprite_size=16
 sprite_radius=sprite_size/2
 
-n = {
+atlases = {}
+quads = {}
+
+function add_quad_page(hex)
+  local tile_size = sprite_size * units
+  local img = love.graphics.newImage("atlas/"..hex..".png")
+  for i=0,15 do
+    for j=0,15 do
+      local id=hex..string.format("%x%x",j,i)
+      quads[id] = love.graphics.newQuad(i*tile_size,j*tile_size,tile_size,tile_size,img:getDimensions())
+      atlases[id] = img
+    end
+  end
+end
+
+add_quad_page("1f3")
+add_quad_page("1f4")
+add_quad_page("1f5")
+add_quad_page("1f6")
+add_quad_page("1f9")
+add_quad_page("1fa")
+add_quad_page("26")
+
+sys = {
   api = require("api"),
   carts={}
 }
@@ -40,10 +61,10 @@ cur_bg = colours[11]
 cur_mode = "unset"
 twinkle = 0
 
-unitW = n.api.W*units
-unitH = n.api.H*units
+unitW = sys.api.W*units
+unitH = sys.api.H*units
 canvas = love.graphics.newCanvas(unitW,unitH)
-scale = math.min((screenW-20)/n.api.W , (screenH-20)/unitH) -- Scale to the nearest integer
+scale = math.min((screenW-20)/sys.api.W , (screenH-20)/unitH) -- Scale to the nearest integer
 translateX = math.floor((screenW - unitW * scale)/2)
 translateY = math.floor((screenH - unitH * scale)/2)
 
@@ -69,23 +90,27 @@ function flush()
   love.graphics.setColor(white)
 	love.graphics.draw(canvas) -- Draw the canvas
 	love.graphics.pop() -- pop transformation state
-  n.api.T = n.api.T + 1
+  sys.api.T = sys.api.T + 1
 end
 
-function n.get_cart(cartid)
+function sys.get_cart(cartid)
   return nil -- override this in main
 end
 
-function n.switch_cart(cartid)
-  n.api.LOG("Switching to",cartid)
-  cart = n.get_cart(cartid)
-  n.api.RESTART()
+function sys.switch_cart(cartid)
+  sys.api.LOG("Switching to",cartid)
+  cart = sys.get_cart(cartid)
+  if cart.loaded then
+    sys.api.RESTART()
+  else
+    sys.api.ERROR(cart)
+  end
 end
 
 function love.update()
   update_time = love.timer.getTime()
-  if (cart[cur_mode].frame) then
-    cart[cur_mode]:frame()
+  if (cur_mode.frame) then
+    cur_mode:frame()
   end
   if (love.mouse.isDown(1, 2, 3)) then
     handle_touch(love.mouse.getX(), love.mouse.getY(), false)
@@ -95,11 +120,8 @@ function love.update()
     local x, y = love.touch.getPosition(v)
     handle_touch(x,y,false)
   end
-  if not cart[cur_mode] then
-    n.api.DIE("mode "..cur_mode.." is not defined")
-  end
-  if (cart[cur_mode].update) then
-    cart[cur_mode]:update()
+  if cur_mode.UPDATE then
+    cur_mode:UPDATE()
   end
   update_time = love.timer.getTime() - update_time
 end
@@ -107,8 +129,8 @@ end
 function love.draw()
   draw_time = love.timer.getTime()
   draw()
-  if (cart[cur_mode].draw) then
-    cart[cur_mode]:draw()
+  if cur_mode.DRAW then
+    cur_mode:DRAW()
   end
   flush()
   draw_time = love.timer.getTime() - draw_time
@@ -117,23 +139,26 @@ end
 
 -- Keys emulate touches. There is no NEMO-83 API for actual keys.
 keys = {
-  right={n.api.W, n.api.H/2},
-  left={0, n.api.H/2},
-  down={n.api.W/2, n.api.H},
-  up={n.api.W/2, 0},
+  right={sys.api.W, sys.api.H/2},
+  left={0, sys.api.H/2},
+  down={sys.api.W/2, sys.api.H},
+  up={sys.api.W/2, 0},
 }
-keys['return'] = {n.api.W/2,n.api.H/2}
+keys['return'] = {sys.api.W/2,sys.api.H/2}
 
 function love.keypressed(key, scancode, isRepeat)
   if (scancode=='escape') then
-    if cart.shutdown then
-      cart:shutdown()
+    if cart.SHUTDOWN then
+      cart:SHUTDOWN()
     end
-    n.api.EXIT()
+    sys.api.EXIT()
   end
   local k = keys[scancode]
-  if (k and cart[cur_mode].touch) then
-    cart[cur_mode]:touch(math.floor(k[1]), math.floor(k[2]), true)
+  if (k and cur_mode.TOUCH) then
+    cur_mode.TOUCH(math.floor(k[1]), math.floor(k[2]), true)
+  end
+  if cur_mode.KEY then
+    cur_mode:KEY(scancode)
   end
 end
 
@@ -148,7 +173,7 @@ end
 function handle_touch(x,y,isNew,isRelease)
   local mx = (x-translateX)/scale/units
   local my = (y-translateY)/scale/units
-  n.api.TOUCH(mx,my,isNew,isRelease)
+  sys.api.TOUCH(mx,my,isNew,isRelease)
 end
 
 function love.mousepressed( x, y, button, istouch, presses )
@@ -163,12 +188,12 @@ function love.mousereleased( x, y, button, istouch, presses )
   end
 end
 
-n.api.__index = n.api
+sys.api.__index = sys.api
 
-function n.environment()
+function sys.environment()
   local o = {}
-  setmetatable(o, n.api)
+  setmetatable(o, sys.api)
   return o
 end
 
-return n
+return sys

@@ -1,12 +1,11 @@
 api = {
-  MODEL="NEMO-83",
-  MODELCONTACT="NEMO83@COLOURCOUNTRY.NET",
+  MODEL="ENORMAL C",
+  API="n83",
+  URL="IDEAL.COLOURCOUNTRY.NET",
   W=144,
   H=240,
   T=0,
   L=6,
-  PAIRS=pairs,
-  pairs=pairs, -- allow this one lowercase function because it's fundamental to lua
   EXEC=loadstring, -- need this to load stuff in the first place
   STR=tostring,
   FLR=math.floor,
@@ -16,8 +15,8 @@ api = {
   ABS=math.abs,
   RND=love.math.random,
   SQRT=math.sqrt,
-  INSERT=table.insert,
-  REMOVE=table.remove
+  UPPER=string.upper,
+  LOWER=string.lower,
 }
 
 cur_x = 0
@@ -44,71 +43,21 @@ function api.LOG(...)
   print(s)
 end
 
-function api.LOOP()
-  local loop = require("loop")
-  local o = {
-    length=0
-  }
-  setmetatable(o, loop)
-  return o
+function api.SIGN(number)
+  return (number > 0 and 1) or (number == 0 and 0) or -1
 end
 
-function api.NEWMODE(parent)
-  local mode = require("mode")
-  local o = {
-  }
-  if (parent) then
-    parent.__index = parent
-    setmetatable(o, parent)
-  else
-    setmetatable(o, mode)
+function api.ITEMS(x)
+  if x.ITEMS then
+    return x:ITEMS()
   end
-  o:init()
-  return o
+  return pairs(x)
 end
 
-entid = 1
-function api.ENT(x, y, r, spr, c)
-  local ent = require("ent")
-  local o = {
-    x=x,
-    y=y,
-    r=r,
-    id=entid,
-    spr=spr,
-    c=c
-  }
-  entid = entid+1
-  setmetatable(o, ent)
-  return o
-end
-
-mapid = 1
-function api.MAP(cx, cy)
-  local map = require("map")
-  local o = {
-    cx=cx,
-    cy=cy,
-    id=mapid
-  }
-  mapid = mapid+1
-  setmetatable(o, map)
-  return o
-end
-
-function api.MENU(items)
-  local menu = require("menu")
-  local o = {
-    items=items
-  }
-  setmetatable(o, menu)
-  o:init()
-  return o
-end
 
 function api.TOUCH(x, y, isNew, isRelease)
-  if (cart[cur_mode].touch) then
-    cart[cur_mode]:touch(x, y, isNew, isRelease)
+  if cur_mode.TOUCH then
+    cur_mode:TOUCH(x, y, isNew, isRelease)
   end
 end
 
@@ -131,7 +80,6 @@ function api.COLOUR(fg, bg)
   love.graphics.setColor(cur_fg)
 end
 
-sprts = {}
 texts = {}
 
 function print_string(strg, x, y, anchor_x, anchor_y)
@@ -151,11 +99,12 @@ function print_string(strg, x, y, anchor_x, anchor_y)
 end
 
 function api.SPR(spr, x, y)
-  if (not sprts[spr]) then
-    sprts[spr] = love.graphics.newText(sprite_font, spr)
-  end
   love.graphics.setColor(cur_fg)
-  love.graphics.draw(sprts[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
+  if quads[spr] then
+    love.graphics.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
+  else
+    love.graphics.draw(atlases["1f344"], quads["1f344"],(x-sprite_radius)*units,(y-sprite_radius)*units)
+  end
 end
 
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
@@ -210,7 +159,7 @@ function api.SPLIT(strg, pixels, atSpace)
   return l
 end
 
-function api.PANEL(x, y, w, h)
+function api.BLOCK(x, y, w, h)
   if not h then
     h=w
   end
@@ -218,7 +167,7 @@ function api.PANEL(x, y, w, h)
   love.graphics.rectangle("fill",x*units,y*units,w*units,h*units)
 end
 
-function api.RECT(x, y, w, h)
+function api.BOX(x, y, w, h)
   if not h then
     h=w
   end
@@ -226,53 +175,55 @@ function api.RECT(x, y, w, h)
   love.graphics.rectangle("line",x*units,y*units,w*units,h*units)
 end
 
+api.RECT = api.BOX
+
 function api.DISC(x, y, r)
   love.graphics.setColor(cur_fg)
   love.graphics.circle("fill",x*units,y*units,r*units)
 end
 
-function api.CIRCLE(x, y, r)
+function api.RING(x, y, r)
   love.graphics.setColor(cur_fg)
   love.graphics.circle("line",x*units,y*units,r*units)
 end
 
+api.CIRCLE = api.RING
 
-function api.CLS(bg)
-  if bg then
-    cur_bg = {colours[bg][1]/4, colours[bg][2]/4, colours[bg][3]/4, 1}
-  end
+function api.CLS()
   love.graphics.clear(cur_bg)
 end
 
 function api.EXIT()
-  cart = n.get_cart("nemo83carousel")
-  cart.carts = n.carts -- carousel has secret access to this
-  cart.switch_cart = n.switch_cart
-  cart.quit = love.event.quit
+  cart = sys.get_cart("_carousel."..api.API)
+  cart.__carts = sys.carts -- carousel has secret access to this
+  cart.__switch = sys.switch_cart
+  cart.__quit = love.event.quit
   api.LOG("Exited to "..cart.name)
   api.RESTART()
 end
 
-function api.DIE(msg)
-  cart = n.get_cart("nemo83error")
-  cart.msg = msg
-  cart.quit = love.event.quit
+function api.ERROR(msg)
+  cart = sys.get_cart("_error."..api.API)
+  cart.__msg = msg
+  cart.__debug = cart_arg_found
+  cart.__quit = love.event.quit
   api.RESTART()
 end
 
 function api.RESTART()
-  if cart.start then
-    cart:start()
-  end
+  api.LOG("Restarting cart "..cart.name)
   api.T = 0
-  api.MODE(cart.start_mode)
+  if not cart.START then
+    api.ERROR("?START")
+    return
+  end
+  cart:START()
 end
 
-function api.MODE(name)
-  api.LOG("Entering mode "..name)
-  cur_mode = name
-  if cart[name].start then
-    cart[name]:start()
+function api.GO(mode)
+  cur_mode = mode
+  if mode.START then
+    mode:START()
   end
 end
 
@@ -294,12 +245,16 @@ function api.POLAR(x,y,ox,oy)
   return math.sqrt(dx*dx+dy*dy), math.deg(math.atan2(dy,dx))
 end
 
-function api.DIRECTION(x,y)
+function api.DIRECTION(x,y,s)
   a = math.sqrt(x*x+y*y)
-  return x/a, y/a, a
+  if (s) then
+    return x*s/a, y*s/a, a
+  else
+    return x/a, y/a, a
+  end
 end
 
-function api.RNDTODAY()
+function api.DAILY()
   local d = tonumber(os.date("%Y%m%d"))
   api.LOG("Resetting RNG to "..tostring(d))
   love.math.setRandomSeed(d)
@@ -311,6 +266,107 @@ function api.SHUFFLE(array)
     local j = math.random(i,#array)
     array[i], array[j] = array[j], array[i]
   end
+end
+
+
+-------------------------------------------------------------------- Object "methods"
+-- To make it a bit more BASICy, these global functions just call named methods of the object
+
+function api.DRAW(o)
+  if o.DRAW then
+    o:DRAW()
+  else
+    api.LOG("ERROR: Can't draw object ",o)
+    api.ERROR("?DRAW")
+  end
+end
+-------------------------------------------------------------------- Object types
+
+entid = 1
+function api.ENT(x, y, r, spr, c)
+  local ent = require("ent")
+  local o = {
+    x=x,
+    y=y,
+    r=r,
+    id=entid,
+    spr=spr,
+    c=c
+  }
+  entid = entid+1
+  setmetatable(o, ent)
+  return o
+end
+
+function api.LOOP()
+  local loop = require("loop")
+  local o = {
+    length=0
+  }
+  setmetatable(o, loop)
+  return o
+end
+
+mapid = 1
+function api.MAP(cx, cy)
+  local map = require("map")
+  local o = {
+    cx=cx,
+    cy=cy,
+    id=mapid
+  }
+  mapid = mapid+1
+  setmetatable(o, map)
+  return o
+end
+
+function api.MENU(items)
+  local menu = require("menu")
+  local o = {
+    items=items
+  }
+  setmetatable(o, menu)
+  o:init()
+  return o
+end
+
+function api.MODE(o)
+  local mode = require("mode")
+  if not o then
+    o = {}
+  end
+  if (o.parent) then
+    o.parent.__index = o.parent
+    setmetatable(o, o.parent)
+  else
+    setmetatable(o, mode)
+  end
+  o:init()
+  return o
+end
+
+function api.INFOMODE(name,instructions)
+  local o = api.MODE()
+  o.draw = function(self)
+    api.CLS(11)
+    api.COLOUR(-1)
+    api.TITLE(name, api.W/2, 0, 0, -1)
+    api.COLOUR(0)
+    local y = api.L*4
+    for i=1,#instructions do
+      api.COLOUR(instructions[i][2])
+      if instructions[i][1]=="" then
+        y = y + api.L*api.PRINTLINES(api.SPLIT(instructions[i][3],api.W-20,true),10,y)
+      else
+        api.SPR(instructions[i][1],18,y+2)
+        api.COLOUR(0)
+        y = y + api.L*api.PRINTLINES(api.SPLIT(instructions[i][3],api.W-50,true),40,y)
+      end
+      y = y + api.L
+    end
+    api.BORDER(11)
+  end
+  return o
 end
 
 return api

@@ -1,0 +1,284 @@
+game = {
+  start_mode="splash",
+  name="PHALANX",
+  info="a shooting game",
+}
+
+empty = LOOP() -- convenience
+
+game.splash = NEWMODE()
+game.main = NEWMODE()
+game.clear = NEWMODE()
+
+game.blocks = NEWMODE(game.main)
+game.missiles = NEWMODE(game.main)
+game.deflect = NEWMODE(game.main)
+game.invisible = NEWMODE(game.main)
+
+bg = 8
+hi = 0
+msg = ""
+
+function draw_scene()
+  COLOUR(7)
+  bullets:each(function(e, rm)
+    e:draw()
+  end)
+  COLOUR(1)
+  super_bullets:each(function(e, rm)
+    e:draw()
+  end)
+  if (not flags.invisible) then
+    COLOUR(4)
+    mobs:each(function(e, rm)
+      e:draw()
+    end)
+  end
+  COLOUR(0)
+  player:draw()
+end
+
+
+function game:start()
+  player = ENT(W/2, H-16, 8, "A")
+  score = 0
+  flags = {}
+  mobs = empty
+  bullets = empty
+  super_bullets = empty
+  mode_menu = MENU({
+    blocks="BLOCKS",
+    missiles="MISSILES",
+    deflect="DEFLECT",
+    invisible = "INVISIBLE"
+  })
+end
+
+------------------------------------------------------------------- splash
+
+function game.splash:start()
+  bullets = empty
+  super_bullets = empty
+end
+
+function game.splash:touch(x, y, isNew)
+  local t = mode_menu:touch(x, y, isNew)
+  if (t) then
+    MODE(t)
+  end
+end
+
+function game.splash:draw()
+  CLS(bg)
+  draw_scene()
+  draw_hiscore()
+  mode_menu:draw()
+  COLOUR(11)
+  BLOCK(10, H/4-2*L, W-20, 5*L)
+  COLOUR(-1)
+  TITLE(game.name, W/2, H/4, 0, 0)
+  COLOUR(0)
+  PRINT("SELECT GAME MODE", W/2, H/4+2*L, 0, 0)
+  BORDER(bg)
+end
+
+------------------------------------------------------------------- clear
+
+function game.clear:draw()
+  CLS(bg)
+  draw_scene()
+  draw_score()
+  game.msg = game.name
+  PRINT("STAGE CLEAR", W/2, H/2, 0, 0)
+  if score>hi then
+    hi = score
+  end
+end
+
+function game.clear:touch(x, y, isNew)
+  if isNew then
+    MODE("splash")
+  end
+end
+
+------------------------------------------------------------------- main
+
+function game.main:start()
+  player = ENT(W/2, H-16, 8, "1f330")
+  score = 0
+  recoil = 0
+  mobs = self.setup_mobs()
+  flags = self.setup_flags()
+  bullets = LOOP()
+  super_bullets = LOOP()
+  bg = FLR(RND(9))
+end
+
+function game.main:setup_flags()
+  return {}
+end
+
+function game.main:setup_mobs()
+  local mobs = LOOP()
+  mob_dx = 1
+  for i=0,4 do
+    for j=0,4 do
+      mobs:add( ENT(12+i*18,20+j*18, 8, "1f47e", j+i) )
+    end
+  end
+  return mobs
+end
+
+function game.main:mob_hit(m, m_rm, b, b_rm, is_super)
+  m_rm()
+  if not is_super then
+    b_rm()
+  end
+  score = score + 100
+end
+
+function game.main:update()
+  if recoil>0 then
+    recoil = recoil - 1
+  end
+
+  local reverse = false
+  mobs:each(function(m, m_rm)
+    m.dx = mob_dx
+    m:move()
+    m.dy = 0
+    if not m:is_on_screen() then
+       reverse=true
+    end
+    if m:collides(player) then
+      game.msg = "EATEN"
+      flags.invisible = false
+      MODE("splash")
+    end
+    if m.y>H then
+      m_rm() -- managed to reach the bottom
+    end
+  end)
+  if reverse then
+    mob_dx = -mob_dx
+    mobs:each(function(m, rm_rm)
+      m.dy = 10
+    end)
+  end
+
+  bullets:each(function(b,b_rm)
+    if not b:is_on_screen() then
+      if flags.deflect then
+        b.dy = -b.dy
+        super_bullets:add(b)
+      end
+      b_rm()
+    end
+    b:move()
+
+    mobs:each(function(m, m_rm)
+      if b:collides(m) then
+        self:mob_hit(m, m_rm, b, b_rm, false)
+      end
+    end)
+  end)
+
+  super_bullets:each(function(b,b_rm)
+    b:move()
+    if not b:is_on_screen() then
+      b_rm()
+    end
+    mobs:each(function(m, m_rm)
+      if b:collides(m) then
+        self:mob_hit(m, m_rm, b, b_rm, true)
+      end
+    end)
+    if b:collides(player) then
+      game.msg = "HIT"
+      flags.invisible = false
+      MODE("splash")
+    end
+  end)
+
+  if (mobs.length==0) then
+    MODE("clear")
+  end
+end
+
+function draw_score()
+  COLOUR(0)
+  PRINT("SCORE", W/4, 0, 0, -1)
+  PRINT(score, W/4, L, 0, -1)
+  draw_hiscore()
+end
+
+function draw_hiscore()
+  COLOUR(0)
+  PRINT("HI", 3*W/4, 0, 0, -1)
+  PRINT(hi, 3*W/4, L, 0, -1)
+end
+
+function game.main:draw()
+  BORDER(bg)
+  CLS(bg)
+  COLOUR(0,bg)
+  draw_score()
+  draw_scene()
+end
+
+function game.main:touch(x, y, isNew)
+  CLS(bg)
+  local dx, dy = DIRECTION(x-player.x, y-player.y)
+  local ox = player.x
+  if (dx>0) then
+    player.x = player.x+1
+  end
+  if (dx<0) then
+    player.x = player.x-1
+  end
+  if (not player:is_on_screen()) then
+    player.x = ox
+  end
+
+  if (recoil>0) then
+    return
+  end
+  score = MAX(0, score-10)
+  recoil=10
+  local b = ENT(player.x, player.y-player.r, 4, "1f538")
+  b.dx = dx
+  b.dy = dy
+  bullets:add(b)
+end
+
+------------------------------------------------------------------- invisible
+
+function game.invisible:setup_flags()
+  return {invisible=true}
+end
+
+------------------------------------------------------------------- deflect
+
+function game.deflect:setup_flags()
+  return {deflect=true}
+end
+
+function game.deflect:mob_hit(m, m_rm, b, b_rm, is_super)
+  m_rm()
+  local r, th = POLAR(b.x, b.y, m.x, m.y)
+  local q = FLR((th+45)/90)
+  if q%2 == 0 then
+    if not is_super then
+      b.dx = -b.dx
+    end
+  else
+    b.dy = -b.dy
+  end
+  if not is_super then
+    super_bullets:add(b)
+    b_rm()
+  end
+  score = score + 100
+end
+
+return game

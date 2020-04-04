@@ -1,6 +1,6 @@
 game = {
   start_mode="splash",
-  name="JEWELS",
+  name="ROCKS",
   info="a matching game",
 }
 
@@ -29,7 +29,7 @@ function draw_scene()
         if e then
           COLOUR(e.c)
           if e.ty then
-            PANEL(e.x+j-8,e.y,1,(e.ty-e.y))
+            BLOCK(e.x+j-8,e.y,1,(e.ty-e.y))
           end
         end
       end
@@ -66,7 +66,7 @@ function game.splash:draw()
   draw_hiscore()
   mode_menu:draw()
   COLOUR(11)
-  PANEL(10, H/4-2*L, W-20, 5*L)
+  BLOCK(10, H/4-2*L, W-20, 5*L)
   COLOUR(-1)
   TITLE(game.name, W/2, H/4, 0, 0)
   COLOUR(0)
@@ -86,7 +86,7 @@ end
 function new_jewel(mx,my)
   if map:get(mx,my) then return end
   local maxcol = 4+FLR(score/4000)
-  map:set(mx,my,"B",(RND(maxcol)*2)%11-1)
+  return map:set(mx,my,"1f48e",(RND(maxcol)*2)%11-1)
 end
 
 function game.main:setup_jewels()
@@ -97,7 +97,6 @@ function game.main:setup_jewels()
     end
   end
   map:centre(W/2,H/2)
-  return jewels, map
 end
 
 
@@ -107,29 +106,38 @@ function game.main:update()
       local below = map:get(mx,my+1)
       if not below then
         map:free(mx,my)
-        falling:add( e )
+        falling:add(e)
       end
     end
   end)
+
   falling:each(function(e,e_rm)
-    local mx,my = map:coord(e.x, e.y+8)
+    local mx,my = map:coord(e.x, e.y+12)
     local below = map:get(mx,my)
     if my==map.sy+1 or below then
       nmx, nmy = map:grab(e)
       e_rm()
       check_line(nmx,nmy,true)
     else
-      e.y = e.y + 2
+      e.y = e.y + 3
       if e.y > H then
         e_rm()
       end
     end
   end)
+
+  if falling.length==0 then
+    for i=1,map.sx do
+      if not map:get(i,3) then
+        new_jewel(i,1)
+      end
+    end
+  end
 end
 
 function draw_score()
   COLOUR(11)
-  PANEL(0,0,W,13)
+  BLOCK(0,0,W,13)
   COLOUR(0)
   PRINT("SCORE", W/4, 0, 0, -1)
   PRINT(score, W/4, L, 0, -1)
@@ -152,8 +160,8 @@ end
 
 function swap(x1,y1,x2,y2)
   map:swap(x1,y1,x2,y2)
-  collect(x1,y1,true)
-  collect(x2,y2,true)
+  check_line(x1,y1,true)
+  check_line(x2,y2,true)
 end
 
 function same_colour(mx,my,e)
@@ -202,14 +210,14 @@ end
 function game.main:touch(x, y, isNew, isRelease)
   if isNew then
     dmx, dmy = map:coord(x,y)
-    check_line(dmx,dmy,true)
+    --check_line(dmx,dmy,true)
   else
     mx, my = map:coord(x,y)
   end
   if isRelease then
     if not dmx or not dmy then return end
     if ABS(mx-dmx)+ABS(my-dmy)~=1 then return end
-    --swap(mx,my,dmx,dmy)
+    swap(mx,my,dmx,dmy)
   end
 end
 

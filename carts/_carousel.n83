@@ -1,0 +1,90 @@
+Cart = {
+  name="_carousel",
+  hidden=true,
+  api="n83"
+}
+
+DATA_LEAK_TEST = "leaking"
+
+Splash = MODE()
+
+function Splash:DRAW()
+  BORDER(0)
+  COLOUR(0,11)
+  CLS()
+  local letter = FLR(T/2)
+  if (letter>50) then
+    GO(Main)
+  end
+  for i=1, letter+1 do
+    COLOUR(i%11)
+    PRINT(MODEL,W/2,((-T)%(H*1.2))+i*L-H, 0, 0)
+  end
+  COLOUR(0)
+  TITLE(MODEL,W/2,H/2,0,0)
+end
+
+function Splash:TOUCH(x,y,isNew)
+  if (isNew) then
+    GO(Main)
+  end
+end
+
+
+
+
+
+Main = MODE()
+
+function Main:UPDATE()
+  if (#cartItems==0) then
+    ERROR("INSERT CART")
+    return
+  end
+end
+
+function Main:DRAW()
+  BORDER(5)
+  COLOUR(3,4)
+  CLS()
+  DRAW(m)
+  COLOUR()
+  TITLE(MODEL, W/2, 24, 0, 0)
+  COLOUR(4)
+  PRINT(msg, W/2, 40, 0, 0)
+end
+
+function Main:TOUCH(x,y,isNew)
+  m:touch(x, y, isNew)
+end
+
+
+
+
+
+
+
+function Cart:START()
+  cartItems = {}
+  for k,v in ITEMS(self.__carts) do
+    if not v.hidden then
+      cartItems[#cartItems+1] = {
+        id=k,
+        name=v.name:upper(),
+        action=function() self.__switch(k) end
+      }
+    end
+  end
+  LOG("Found ",#cartItems," carts")
+  m = MENU(cartItems)
+  msg = "SELECT CARTRIDGE"
+  GO(Splash)
+end
+
+function Cart:SHUTDOWN()
+  if self.__quit then
+    self.__quit()
+  end
+end
+
+return Cart

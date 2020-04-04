@@ -16,7 +16,10 @@ function map:each(f,...)
   for i=1,self.sx do
     for j=1,self.sy do
       if self[i] and self[i][j] then
-        f(self[i][j],i,j,...)
+        local r = f(self[i][j],i,j,...)
+        if r then
+          return r
+        end
       end
     end
   end
@@ -57,6 +60,12 @@ function map:get(mx,my)
   end
 end
 
+function map:unset(mx,my)
+  if self[mx] then
+    self[mx][my] = nil
+  end
+end
+
 function map:set(mx,my,spr,c)
   if spr ~= " " then
     if not self[mx] then
@@ -68,7 +77,7 @@ function map:set(mx,my,spr,c)
     if my > self.sy then
       self.sy = my
     end
-    self[mx][my] = n.api.ENT(mx*16,my*16,16,spr,c)
+    self[mx][my] = n.api.ENT(mx*16,my*16,8,spr,c)
   end
   return self[mx][my]
 end
@@ -157,6 +166,29 @@ end
 function map:centre(x,y)
   self.cx = (self.sx*8)-x+8
   self.cy = (self.sy*8)-y+8
+end
+
+function map:collides(e)
+  return self:each(function(m)
+    local c = m:collides(e,self.cx,self.cy)
+    if c then
+      return { ent=m, dx=c.dx, dy=c.dy }
+    end
+  end)
+end
+
+function map:move_and_repel(e)
+  if (e.dx==0 and e.dy==0) then return end
+  e.x = e.x + e.dx
+  local c = self:collides(e)
+  if c then
+    e.x = e.x - c.dx
+  end
+  e.y = e.y + e.dy
+  c = self:collides(e)
+  if c then
+    e.y = e.y - c.dy
+  end
 end
 
 return map

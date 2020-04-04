@@ -1,0 +1,47 @@
+c = {
+  name="LUA",
+  start_mode="init",
+  init = NEWMODE(),
+  main = NEWMODE();
+}
+
+t = {}
+fg = 1
+cur_y = 1
+cur_x = 1
+lines = {""}
+
+
+function c.init:draw()
+  COLOUR(fg,9)
+  CLS()
+  MODE("main")
+end
+
+function c.main:draw()
+  BORDER(fg)
+  for y, v in pairs(lines) do
+    LOG(y,v)
+    PRINT(v:upper(),0,10+y*L)
+  end
+end
+
+function c.main:key(k)
+  if k=='return' then
+    cur_y = cur_y + 1
+    cur_x = 0
+    if not lines[cur_y] then
+      lines[cur_y] = ""
+    end
+    return
+  end
+  if k=='backspace' then
+    lines[cur_y] = lines[cur_y]:slice(1,cur_x)
+    cur_x = cur_x - 1
+  end
+  lines[cur_y] = lines[cur_y]..k
+  cur_x = cur_x + #k
+  LOG(cur_x,cur_y,k)
+end
+
+return c

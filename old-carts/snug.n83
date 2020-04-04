@@ -9,45 +9,43 @@ empty = LOOP() -- convenience
 game.splash = NEWMODE()
 game.main = NEWMODE()
 game.over = NEWMODE()
+game.instructions = INFOMODE(game.name,
+  {
+    {"",0,  "DESIGN A PERFECT ROOM BY PLACING 10 ITEMS OF FURNITURE IN THE BEST PLACES"},
+    {"1f9f1",3, "THE WALLS"},
+    {"1f532",5, "TABLES SCORE 5 FOR EVERY CHAIR AROUND THEM"},
+    {"2638",7, "RUGS SCORE 2 FOR EVERY EMPTY SPACE AROUND THEM"},
+    {"1f56f",4,  "LIGHTS SCORE 5 FOR EVERY WALL NEXT TO THEM"},
+    {"1fa91",3,  "CHAIRS SCORE 5 FOR EVERY DIFFERENT ITEM AROUND THEM"},
+    {"",0,   "PLACE ANY TWO ITEMS OF THE SAME KIND"..
+             "IN SYMMETRICAL POSITIONS ABOUT THE ROOM'S HORIZONTAL OR VERTICAL AXIS"..
+             "FOR A BONUS"}
+  }
+)
 
-function check_name(x,y,n)
+function count(x,y,n)
   local o = map:get(x,y)
-  return o and o.name==n
+  if n and o and o.name==n then return 1 end
+  if not n and not o then return 1 end
+  return 0
+end
+
+function count_around(x,y,n)
+  return count(x-1,y-1,n)+count(x,y-1,n)+count(x+1,y-1,n)+
+         count(x-1,y,n)+                 count(x+1,y,n)+
+         count(x-1,y+1,n)+count(x,y+1,n)+count(x+1,y+1,n)
 end
 
 function score_table(x,y)
-  local s = 0
-  if check_name(x-1,y,"CHAIR") then s = s + 5 end
-  if check_name(x+1,y,"CHAIR") then s = s + 5 end
-  if check_name(x,y-1,"CHAIR") then s = s + 5 end
-  if check_name(x,y+1,"CHAIR") then s = s + 5 end
-  return s
+  return 5 * count_around(x,y,"CHAIR")
 end
 
 function score_light(x,y)
-  local s = 0
-  if check_name(x-1,y-1,"WALL") then s = s + 5 end
-  if check_name(x-1,y,"WALL") then s = s + 5 end
-  if check_name(x-1,y+1,"WALL") then s = s + 5 end
-  if check_name(x,y-1,"WALL") then s = s + 5 end
-  if check_name(x,y+1,"WALL") then s = s + 5 end
-  if check_name(x+1,y-1,"WALL") then s = s + 5 end
-  if check_name(x+1,y,"WALL") then s = s + 5 end
-  if check_name(x+1,y+1,"WALL") then s = s + 5 end
-  return s
+  return 5 * count_around(x,y,"WALL")
 end
 
 function score_rug(x,y)
-  local s = 0
-  if not map:get(x-1,y-1) then s = s + 2 end
-  if not map:get(x,y-1) then s = s + 2 end
-  if not map:get(x+1,y-1) then s = s + 2 end
-  if not map:get(x-1,y) then s = s + 2 end
-  if not map:get(x+1,y) then s = s + 2 end
-  if not map:get(x-1,y+1) then s = s + 2 end
-  if not map:get(x,y+1) then s = s + 2 end
-  if not map:get(x-1,y+1) then s = s + 2 end
-  return s
+  return 3 * count_around(x,y,nil)
 end
 
 function score_chair(x,y)
@@ -57,9 +55,17 @@ function score_chair(x,y)
   if e and e.name then t[e.name] = true end
   e = map:get(x+1,y)
   if e and e.name then t[e.name] = true end
+  e = map:get(x-1,y-1)
+  if e and e.name then t[e.name] = true end
   e = map:get(x,y-1)
   if e and e.name then t[e.name] = true end
+  e = map:get(x+1,y-1)
+  if e and e.name then t[e.name] = true end
+  e = map:get(x-1,y+1)
+  if e and e.name then t[e.name] = true end
   e = map:get(x,y+1)
+  if e and e.name then t[e.name] = true end
+  e = map:get(x+1,y+1)
   if e and e.name then t[e.name] = true end
   for k, v in pairs(t) do
     s = s + 5
@@ -68,10 +74,10 @@ function score_chair(x,y)
 end
 
 shelf = {
-  { name="TABLE", spr="B", c=6, get_score=score_table },
-  { name="RUG", spr="B", c=8, get_score=score_rug },
-  { name="LIGHT", spr="A", c=3, get_score=score_light },
-  { name="CHAIR", spr="o", c=2, get_score=score_chair },
+  { name="TABLE", spr="1f532", c=6, get_score=score_table },
+  { name="RUG", spr="2638", c=8, get_score=score_rug },
+  { name="LIGHT", spr="1f56f", c=3, get_score=score_light },
+  { name="CHAIR", spr="1fa91", c=2, get_score=score_chair },
 }
 
 bg = 8
@@ -113,15 +119,15 @@ end
 function new_room()
   map:empty()
   for i=1,8 do
-    local e = map:set(i,1,"B",10)
+    local e = map:set(i,1,"1f9f1",10)
     e.name = "WALL"
-    e = map:set(i,8,"B",10)
+    e = map:set(i,8,"1f9f1",10)
     e.name = "WALL"
   end
   for j=2,7 do
-    local e = map:set(1,j,"B",10)
+    local e = map:set(1,j,"1f9f1",10)
     e.name = "WALL"
-    e = map:set(8,j,"B",10)
+    e = map:set(8,j,"1f9f1",10)
     e.name = "WALL"
   end
   map:centre(W/2,H/3+2*L)
@@ -158,7 +164,8 @@ function game:start()
   score = 0
   flags = {}
   mode_menu = MENU({
-    main="START"
+    main="START",
+    instructions="INSTRUCTIONS"
   })
 end
 
@@ -183,7 +190,7 @@ function game.splash:draw()
   draw_hiscore()
   mode_menu:draw()
   COLOUR(11)
-  PANEL(10, H/4-2*L, W-20, 5*L)
+  BLOCK(10, H/4-2*L, W-20, 5*L)
   COLOUR(-1)
   TITLE(game.name, W/2, H/4, 0, 0)
   COLOUR(0)

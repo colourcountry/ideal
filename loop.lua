@@ -67,24 +67,32 @@ function loop:remove(i)
   self.length = self.length - 1
 end
 
-function loop:each(f)
-  if self.length == 0 then
-    return
-  end
+function loop:ITEMS()
   local i = self.first
-  if self[i] then
-    f(self[i], function()
-      self:remove(i)
-    end)
-  end
-  i = self.path[i]
-  while i and i ~= self.first do
+  return function()
+    if self.length == 0 then
+      return
+    end
     if self[i] then
-      f(self[i], function() self:remove(i) end)
+      return i, self[i]
     end
     i = self.path[i]
+    while i and i ~= self.first do
+      if self[i] then
+        return i, self[i]
+      end
+      i = self.path[i]
+    end
   end
 end
+
+function loop:DRAW()
+  for i, obj in self:ITEMS() do
+    DRAW(obj)
+  end
+end
+
+loop.draw = loop.DRAW
 
 function loop:pop()
   if self.length==0 then

@@ -1,0 +1,5 @@
+return {
+  name="_test_icon_not_in_filename",
+  icon="1f330",
+  api="n83"
+}
