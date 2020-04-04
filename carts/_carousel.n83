@@ -68,7 +68,7 @@ function Cart:START()
   LOG("Starting Carousel")
   cartItems = {}
   for k,v in ITEMS(self.__carts) do
-    if not v.hidden then
+    if not k:find("^_") then
       cartItems[#cartItems+1] = {
         id=k,
         name=v.name:upper(),

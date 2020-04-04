@@ -65,7 +65,6 @@ function Cart:START()
   bullets = empty
   super_bullets = empty
   mode_menu = MENU({
-    { name= Main.name,  action=function() GO(Main) end },
     { name= Blocks.name,  action=function() GO(Blocks) end },
     { name= Missiles.name,  action=function() GO(Missiles) end },
     { name= Deflect.name,   action=function() GO(Deflect) end },
@@ -154,7 +153,8 @@ function Main:setup_mobs()
   mob_dx = 1
   for i=0,4 do
     for j=0,4 do
-      mobs:add( ENT(12+i*18,20+j*18, 8, chars.mob, j+i) )
+      local ent = ENT(12+i*18,20+j*18, 8, chars.mob, j+i)
+      mobs:add( ent )
     end
   end
   return mobs
@@ -168,7 +168,7 @@ function Main:mob_hit(m, m_rm, b, b_rm, is_super)
   score = score + 100
 end
 
-function Main:UPDATE2()
+function Main:UPDATE()
   if recoil>0 then
     recoil = recoil - 1
   end
@@ -212,9 +212,9 @@ function Main:UPDATE2()
       if b:collides(m) then
         self:mob_hit(
           m,
-          function() mobs.remove(mi) end,
+          function() mobs:remove(mi) end,
           b,
-          function() bullets.remove(bi) end,
+          function() bullets:remove(bi) end,
           false
         )
       end
@@ -270,16 +270,14 @@ function Main:DRAW()
   draw_scene()
 end
 
-function Main:TOUCH2(x, y, isNew)
+function Main:TOUCH(x, y, isNew)
   CLS(bg)
-  local dx, dy = DIRECTION(x-player.x, y-player.y)
+  local dx, dy, d = DIRECTION(x-player.x, y-player.y)
   local ox = player.x
-  if (dx>0) then
-    player.x = player.x+1
-  end
-  if (dx<0) then
-    player.x = player.x-1
-  end
+  local pdx = MIN(d/10,3)
+  local pdy = 0
+  player.x = player.x + pdx*dx
+  player.y = player.y + pdy*dy
   if (not player:is_on_screen()) then
     player.x = ox
   end
@@ -290,8 +288,8 @@ function Main:TOUCH2(x, y, isNew)
   score = MAX(0, score-10)
   recoil=10
   local b = ENT(player.x, player.y-player.r, 4, "1f538")
-  b.dx = dx
-  b.dy = dy
+  b.dx = pdx*dx
+  b.dy = -1
   bullets:add(b)
 end
 

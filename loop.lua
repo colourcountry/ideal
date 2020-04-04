@@ -5,16 +5,19 @@ loop.__index = loop
 
 function loop:add(x)
   if not x then return end
-  if not self.length or self.length==0 then
+  if self.length<0 then
+    sys.api.LOG("Length??",self)
+  end
+  if not self.length or self.length<=0 then
     self.path={[1]=1}
     self.rpath={[1]=1}
     self.first=1
-    self[1]=x
+    self.items={[1]=x}
     self.length=1
     self.top=2
     return
   end
-  self[self.top] = x
+  self.items[self.top] = x
   local last = self.rpath[self.first]
   self.path[last] = self.top
   self.rpath[self.top] = last
@@ -24,11 +27,7 @@ function loop:add(x)
   self.top = self.top + 1
 end
 
-function loop:print()
-  if self.length==0 then
-    print("0.")
-    return
-  end
+function loop:LOG()
   local s = tostring(self.length)..": "..tostring(self.first)..";"
   local i = self.path[self.first]
   local b = 0
@@ -45,14 +44,15 @@ function loop:print()
       break
     end
   end
-  print(s)
+  return s
 end
 
 function loop:remove(i)
+  sys.api.LOG("Removing",i,"from",self)
   if not self.path[i] then
     return -- shrug
   end
-  if self.length == 1 then
+  if self.length <= 1 then
     self.length = 0
     return
   end
@@ -63,30 +63,28 @@ function loop:remove(i)
   end
   self.path[i] = nil
   self.rpath[i] = nil
-  self[i] = nil
+  self.items[i] = nil
   self.length = self.length - 1
 end
 
 function loop:ITEMS()
   local i = self.first
+  local b = 1
   return function()
-    if self.length == 0 then
+    if b > self.length then
       return
     end
-    if self[i] then
-      return i, self[i]
-    end
+    local o = i
     i = self.path[i]
-    while i and i ~= self.first do
-      if self[i] then
-        return i, self[i]
-      end
-      i = self.path[i]
+    b = b+1
+    if self.items[o] then
+      return o, self.items[o]
     end
   end
 end
 
 function loop:DRAW()
+  sys.api.LOG("Drawing",self)
   for i, obj in self:ITEMS() do
     DRAW(obj)
   end
@@ -98,7 +96,7 @@ function loop:pop()
   if self.length==0 then
     return nil
   end
-  local p = self[self.first]
+  local p = self.items[self.first]
   self:remove(self.first)
   return p
 end
