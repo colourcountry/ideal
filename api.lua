@@ -8,7 +8,6 @@ api = {
   L=6,
   S=16,
   EXEC=loadstring, -- need this to load stuff in the first place
-  STR=tostring,
   FLR=math.floor,
   CEIL=math.ceil,
   MAX=math.max,
@@ -18,12 +17,13 @@ api = {
   SQRT=math.sqrt,
   UPPER=string.upper,
   LOWER=string.lower,
+  SORT=table.sort
 }
 
 cur_x = 0
 cur_y = 0
 
-function dumpobj(o)
+function api.STR(o)
   if o == nil then
     return "nil"
   end
@@ -34,7 +34,7 @@ function dumpobj(o)
     local s = '{ '
     for k,v in pairs(o) do
        if type(k) ~= 'number' then k = '"'..k..'"' end
-       s = s .. '['..k..'] = ' .. dumpobj(v) .. ','
+       s = s .. '['..k..'] = ' .. api.STR(v) .. ','
     end
     return s .. '} '
   else
@@ -45,7 +45,7 @@ end
 function api.LOG(...)
   s = tostring(api.T)..": "
   for k,v in pairs({...}) do
-    s = s..dumpobj(v).." "
+    s = s..api.STR(v).." "
   end
   print(s)
 end
@@ -54,11 +54,11 @@ function api.SIGN(number)
   return (number > 0 and 1) or (number == 0 and 0) or -1
 end
 
-function api.ITEMS(x)
-  if x.ITEMS then
-    return x:ITEMS()
+function api.ITEMS(iterable)
+  if iterable.ITEMS then
+    return iterable:ITEMS()
   end
-  return pairs(x)
+  return pairs(iterable)
 end
 
 
@@ -82,7 +82,7 @@ end
 
 function api.BORDER(c)
   local f = {colours[c][1]/2, colours[c][2]/2, colours[c][3]/2, 1}
-  love.graphics.setBackgroundColor(f)
+  lg.setBackgroundColor(f)
 end
 
 function api.COLOUR(fg, bg)
@@ -97,7 +97,7 @@ function api.COLOUR(fg, bg)
   if colours[bg] then
     cur_bg = {colours[bg][1]/4, colours[bg][2]/4, colours[bg][3]/4, 1}
   end
-  love.graphics.setColor(cur_fg)
+  lg.setColor(cur_fg)
 end
 
 texts = {}
@@ -113,25 +113,25 @@ function print_string(strg, x, y, anchor_x, anchor_y)
     anchor_y = 1
   end
   if (not texts[strg]) then
-    texts[strg] = love.graphics.newText(system_font, strg)
+    texts[strg] = lg.newText(system_font, strg)
   end
   print_text(texts[strg], x, y, anchor_x, anchor_y)
 end
 
 function api.SPR(spr, x, y)
-  love.graphics.setColor(cur_fg)
+  lg.setColor(cur_fg)
   if quads[spr] then
-    love.graphics.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
+    lg.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
   else
-    love.graphics.draw(atlases["1f344"], quads["1f344"],(x-sprite_radius)*units,(y-sprite_radius)*units)
+    lg.draw(atlases["1f344"], quads["1f344"],(x-sprite_radius)*units,(y-sprite_radius)*units)
   end
 end
 
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
-  love.graphics.push()
-  love.graphics.scale(2)
+  lg.push()
+  lg.scale(2)
   print_string(strg, x/2, y/2, anchor_x, anchor_y)
-  love.graphics.pop()
+  lg.pop()
 end
 
 function api.PRINT(strg, x, y, anchor_x, anchor_y)
@@ -148,8 +148,8 @@ function print_text(text, x, y, anchor_x, anchor_y)
   cur_x = ax
   cur_y = ay
 
-  love.graphics.setColor(cur_fg)
-  love.graphics.draw(text,ax*units,ay*units)
+  lg.setColor(cur_fg)
+  lg.draw(text,ax*units,ay*units)
 end
 
 function api.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
@@ -183,61 +183,60 @@ function api.BLOCK(x, y, w, h)
   if not h then
     h=w
   end
-  love.graphics.setColor(cur_fg)
-  love.graphics.rectangle("fill",x*units,y*units,w*units,h*units)
+  lg.setColor(cur_fg)
+  lg.rectangle("fill",x*units,y*units,w*units,h*units)
 end
 
 function api.BOX(x, y, w, h)
   if not h then
     h=w
   end
-  love.graphics.setColor(cur_fg)
-  love.graphics.rectangle("line",x*units,y*units,w*units,h*units)
+  lg.setColor(cur_fg)
+  lg.rectangle("line",x*units,y*units,w*units,h*units)
 end
 
 api.RECT = api.BOX
 
 function api.DISC(x, y, r)
-  love.graphics.setColor(cur_fg)
-  love.graphics.circle("fill",x*units,y*units,r*units)
+  lg.setColor(cur_fg)
+  lg.circle("fill",x*units,y*units,r*units)
 end
 
 function api.RING(x, y, r)
-  love.graphics.setColor(cur_fg)
-  love.graphics.circle("line",x*units,y*units,r*units)
+  lg.setColor(cur_fg)
+  lg.circle("line",x*units,y*units,r*units)
 end
 
 api.CIRCLE = api.RING
 
 function api.CLS()
-  love.graphics.clear(cur_bg)
+  lg.clear(cur_bg)
 end
 
 function api.EJECT()
-  cart = sys.get_cart("_carousel."..api.API)
-  cart.__carts = sys.carts -- carousel has secret access to this
-  cart.__switch = sys.switch_cart
-  cart.__quit = love.event.quit
-  api.LOG("Exited to "..cart.name)
+  cur_cart = get_cart("_carousel."..api.API)
+  cur_cart.__carts = carts -- carousel has secret access to this
+  cur_cart.__switch = switch_cart
+  cur_cart.__quit = love.event.quit
   api.RESTART()
 end
 
 function api.ERROR(msg)
-  cart = sys.get_cart("_error."..api.API)
-  cart.__msg = msg
-  cart.__debug = cart_arg_found
-  cart.__quit = love.event.quit
+  cur_cart = get_cart("_error."..api.API)
+  cur_cart.__msg = msg
+  cur_cart.__debug = cart_arg_found
+  cur_cart.__quit = love.event.quit
   api.RESTART()
 end
 
 function api.RESTART()
-  api.LOG("Restarting cart "..cart.name)
+  api.LOG("Restarting cart "..cur_cart.name)
   api.T = 0
-  if not cart.START then
+  if not cur_cart.START then
     api.ERROR("?START")
     return
   end
-  cart:START()
+  cur_cart:START()
 end
 
 function api.GO(mode)
@@ -293,11 +292,12 @@ end
 -------------------------------------------------------------------- Object "methods"
 -- To make it a bit more BASICy, these global functions just call named methods of the object
 
-function api.DRAW(o)
-  if o.DRAW then
-    o:DRAW()
+function api.DRAW(drawable)
+  if drawable.DRAW then
+    drawable:DRAW()
   else
-    api.LOG("ERROR: Can't draw object ",o)
+    api.LOG("ERROR: Can't draw object ",drawable)
+    die()
     api.ERROR("?DRAW")
   end
 end
@@ -351,6 +351,16 @@ function api.MENU(items)
   return o
 end
 
+function api.MAINMENU(modelist)
+  local m = {}
+  for i=1,#modelist do
+    m[#m+1] = { name=modelist[i].name, icon=modelist[i].icon, action=function() api.GO(modelist[i]) end }
+  end
+  m[#m+1] = { name="RECORDS", icon="1f3c6", action=api.MEMORY }
+  m[#m+1] = { name="EJECT", icon="23cf", action=api.EJECT }
+  return api.MENU(m)
+end
+
 function api.MODE(o)
   local mode = require("mode")
   if not o then
@@ -388,6 +398,41 @@ function api.INFOMODE(name,instructions)
     api.BORDER(11)
   end
   return o
+end
+
+function api.MEMORY()
+  local cartid = cur_cartid
+  cur_cart = get_cart("_memory."..api.API)
+  cur_cart.__switch = switch_cart
+  cur_cart.__memory = memory[cartid]
+  cur_cart.__cart = carts[cartid]
+  api.RESTART()
+end
+
+function api.LOCATION(loc,value,name,icon)
+  if not memory[cur_cartid] then memory[cur_cartid] = {} end
+  if memory[cur_cartid][loc] then
+    api.LOG("Retaining existing value ",memory[cur_cartid][loc].value," for ",name)
+    memory[cur_cartid][loc].name=name
+    memory[cur_cartid][loc].icon=icon
+  else
+    memory[cur_cartid][loc] = { value=value, name=name, icon=icon }
+  end
+  save_memory(cur_cartid)
+  return loc
+end
+
+function api.POKE(loc,value)
+  if not memory[cur_cartid] then memory[cur_cartid] = {} end
+  if not memory[cur_cartid][loc] then memory[cur_cartid][loc] = {} end
+  memory[cur_cartid][loc].value = value
+  save_memory(cur_cartid)
+end
+
+function api.PEEK(loc)
+  api.LOG("Peeking ",loc," from ",memory[cur_cartid])
+  if not memory[cur_cartid] or not memory[cur_cartid][loc] then return end
+  return memory[cur_cartid][loc].value
 end
 
 return api

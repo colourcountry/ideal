@@ -2,10 +2,22 @@
 
 function love.load()
   -- Load the main console API.
-
+  json = require("json")
   sys = require("system")
 
-  function sys.get_cart(cartid)
+  function save_memory(cartid)
+    if not sys.memory[cartid] then
+      sys.api.LOG(cartid,": nothing to save")
+    end
+    local j = json.encode(sys.memory[cartid])
+
+    love.filesystem.createDirectory("memory")
+    local path = "memory/"..cartid
+    sys.api.LOG(path,": writing file")
+    love.filesystem.write(path,j)
+  end
+
+  function get_cart(cartid)
     if not sys.carts[cartid] then
       sys.api.LOG(cartid,": not indexed")
     end
@@ -22,6 +34,15 @@ function love.load()
     if not chunk then
       sys.api.LOG(path,": not found")
       return "?FILE"
+    end
+
+    local mem_path = "memory/"..cartid
+    sys.api.LOG(mem_path,": reading memory")
+    local j = love.filesystem.read(mem_path)
+    if j then
+      sys.memory[cartid] = json.decode(j)
+    else
+      sys.api.LOG(mem_path,": no memory found")
     end
 
     cur_env = sys.environment()
@@ -55,6 +76,7 @@ function love.load()
 
     sys.carts[cartid] = new_cart
     sys.carts[cartid].loaded = true
+    sys.carts[cartid].id = cartid
     sys.api.LOG(path,": loaded successfully")
     return sys.carts[cartid]
   end

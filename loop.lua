@@ -1,5 +1,6 @@
 loop = {
   length=0,
+  path={}
 }
 loop.__index = loop
 
@@ -84,9 +85,8 @@ function loop:ITEMS()
 end
 
 function loop:DRAW()
-  sys.api.LOG("Drawing",self)
   for i, obj in self:ITEMS() do
-    DRAW(obj)
+    obj:DRAW()
   end
 end
 

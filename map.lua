@@ -26,20 +26,20 @@ function map:each(f,...)
 end
 
 function draw_with_text(e, mx, my, text_colour)
-  e:draw()
+  e:DRAW()
   if e.text and text_colour then
-    n.api.COLOUR(text_colour)
-    n.api.PRINT(e.text,e.x,e.y,0,0)
+    sys.api.COLOUR(text_colour)
+    sys.api.PRINT(e.text,e.x,e.y,0,0)
   end
 end
 
-function map:draw(text_colour)
+function map:DRAW(text_colour)
   love.graphics.push()
   love.graphics.translate(-self.cx*units,-self.cy*units)
   self:each(draw_with_text, text_colour)
   if self.hx and self.hy then
-    n.api.COLOUR(1)
-    n.api.CIRCLE(self.hx*16,self.hy*16,8)
+    sys.api.COLOUR(1)
+    sys.api.CIRCLE(self.hx*16,self.hy*16,8)
   end
   if self.zx and self.zy then
     if not self.zw then
@@ -48,8 +48,8 @@ function map:draw(text_colour)
     if not self.zh then
       self.zh = 1
     end
-    n.api.COLOUR(5)
-    n.api.RECT(self.zx*16-8,self.zy*16-8,self.zw*16,self.zh*16)
+    sys.api.COLOUR(5)
+    sys.api.RECT(self.zx*16-8,self.zy*16-8,self.zw*16,self.zh*16)
   end
   love.graphics.pop()
 end
@@ -77,7 +77,7 @@ function map:set(mx,my,spr,c)
     if my > self.sy then
       self.sy = my
     end
-    self[mx][my] = n.api.ENT(mx*16,my*16,8,spr,c)
+    self[mx][my] = sys.api.ENT(mx*16,my*16,8,spr,c)
   end
   return self[mx][my]
 end

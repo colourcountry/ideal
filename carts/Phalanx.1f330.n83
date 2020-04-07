@@ -5,8 +5,8 @@ Cart = {
   api="n83"
 }
 
-messages = {
-  credit="OIH 2020",
+Messages = {
+  credit="DOIHEART 2020",
   select_mode="SELECT GAME MODE",
   clear="STAGE CLEAR",
   eaten="EATEN",
@@ -15,12 +15,18 @@ messages = {
   hi="HI"
 }
 
-chars = {
+Memory = {
+  loads=LOCATION(1,0,"Loads","1f47b"),
+  fix=LOCATION(2,42,"Forty-two"),
+  random=LOCATION(3,0,"Random","1f330")
+}
+
+Chars = {
   player="1f330",
   mob="1f47b"
 }
 
-empty = LOOP() -- convenience
+Empty = LOOP() -- convenience
 
 Splash = MODE()
 Menu = MODE()
@@ -39,16 +45,16 @@ msg = ""
 
 function draw_scene()
   COLOUR(7)
-  for i,ent in ITEMS(bullets) do
+  for i,ent in ITEMS(bullets or {}) do
     DRAW(ent)
   end
   COLOUR(1)
-  for i,ent in ITEMS(super_bullets) do
+  for i,ent in ITEMS(super_bullets or {}) do
     DRAW(ent)
   end
   if (not flags.invisible) then
     COLOUR(4)
-    for i,ent in ITEMS(mobs) do
+    for i,ent in ITEMS(mobs or {}) do
       DRAW(ent)
     end
   end
@@ -58,19 +64,10 @@ end
 
 
 function Cart:START()
-  player = ENT(W/2, H-16, 8, chars.player)
+  player = ENT(W/2, H-16, 8, Chars.player)
   score = 0
   flags = {}
-  mobs = empty
-  bullets = empty
-  super_bullets = empty
-  mode_menu = MENU({
-    { name= Blocks.name,  action=function() GO(Blocks) end },
-    { name= Missiles.name,  action=function() GO(Missiles) end },
-    { name= Deflect.name,   action=function() GO(Deflect) end },
-    { name= Invisible.name, action=function() GO(Invisible) end },
-    { name= "EJECT", action=EJECT }
-  })
+  mode_menu = MAINMENU({ Blocks, Missiles, Deflect, Invisible })
   GO(Splash)
 end
 
@@ -86,14 +83,16 @@ function Splash:DRAW()
   BORDER(11)
   TITLE(UPPER(Cart.name), W/2, H/4, 0, 0)
   COLOUR(0)
-  PRINT(UPPER(messages.credit), W/2, H-L, 0, 0)
+  PRINT(UPPER(Messages.credit), W/2, H-L, 0, 0)
 end
 
 ------------------------------------------------------------------- splash
 
 function Menu:START()
-  bullets = empty
-  super_bullets = empty
+  bullets = Empty
+  super_bullets = Empty
+  POKE(Memory.loads,(PEEK(Memory.loads) or 0)+1)
+  POKE(Memory.random,RND(4000))
 end
 
 function Menu:TOUCH(x, y)
@@ -117,7 +116,7 @@ function Menu:DRAW()
   COLOUR(-1)
   TITLE(UPPER(Cart.name), W/2, H/4, 0, 0)
   COLOUR(0)
-  PRINT(messages.select_mode, W/2, H/4+2*L, 0, 0)
+  PRINT(Messages.select_mode, W/2, H/4+2*L, 0, 0)
 end
 
 ------------------------------------------------------------------- clear
@@ -127,7 +126,7 @@ function Clear:DRAW()
   draw_scene()
   draw_score()
   msg = Cart.name
-  PRINT(messages.clear, W/2, H/2, 0, 0)
+  PRINT(Messages.clear, W/2, H/2, 0, 0)
   if score>hi then
     hi = score
   end
@@ -140,7 +139,7 @@ end
 ------------------------------------------------------------------- main
 
 function Main:START()
-  player = ENT(W/2, H-16, 8, chars.player)
+  player = ENT(W/2, H-16, 8, Chars.player)
   score = 0
   recoil = 0
   mobs = self.setup_mobs()
@@ -159,7 +158,7 @@ function Main:setup_mobs()
   mob_dx = 1
   for i=0,4 do
     for j=0,4 do
-      local ent = ENT(12+i*18,20+j*18, 8, chars.mob, j+i)
+      local ent = ENT(12+i*18,20+j*18, 8, Chars.mob, j+i)
       mobs:add( ent )
     end
   end
@@ -189,7 +188,7 @@ function Main:UPDATE()
        reverse=true
     end
     if m:collides(player) then
-      msg = messages.eaten
+      msg = Messages.eaten
       flags.invisible = false
       GO(Splash)
     end
@@ -244,7 +243,7 @@ function Main:UPDATE()
       end
     end
     if b:collides(player) then
-      msg = messages.hit
+      msg = Messages.hit
       flags.invisible = false
       GO(Splash)
     end
@@ -257,14 +256,14 @@ end
 
 function draw_score()
   COLOUR(0)
-  PRINT(messages.score, W/4, 0, 0, -1)
+  PRINT(Messages.score, W/4, 0, 0, -1)
   PRINT(score, W/4, L, 0, -1)
   draw_hiscore()
 end
 
 function draw_hiscore()
   COLOUR(0)
-  PRINT(messages.hi, 3*W/4, 0, 0, -1)
+  PRINT(Messages.hi, 3*W/4, 0, 0, -1)
   PRINT(hi, 3*W/4, L, 0, -1)
 end
 
@@ -276,7 +275,7 @@ function Main:DRAW()
   draw_scene()
 end
 
-function Main:DRAG(x, y)
+function Main:DRAG(ox, oy, x, y)
   local dx, dy, d = DIRECTION(x-player.x, y-player.y)
   local ox = player.x
   local pdx = MIN(d/10,3)
@@ -294,7 +293,7 @@ function Main:DRAG(x, y)
   recoil=10
   local b = ENT(player.x, player.y-player.r, 4, "1f538")
   b.dx = pdx*dx
-  b.dy = -1
+  b.dy = -2
   bullets:add(b)
 end
 

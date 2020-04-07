@@ -10,6 +10,8 @@ menu = {
   separation = sys.api.L,
   cols = 2,
   sensitivity = 5,
+  prevY = 0,
+  inertia = 0,
 }
 menu.__index = menu
 
