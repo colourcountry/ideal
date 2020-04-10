@@ -12,20 +12,27 @@ map = {
 }
 map.__index = map
 
-function map:each(f,...)
-  for i=1,self.sx do
-    for j=1,self.sy do
+S = sys.api.S
+
+function map:ITEMS()
+  local all_items = {}
+  for j=1,self.sy do
+    for i=1,self.sx do
       if self[i] and self[i][j] then
-        local r = f(self[i][j],i,j,...)
-        if r then
-          return r
-        end
+        all_items[#all_items+1]=self[i][j]
       end
+    end
+  end
+  i=0
+  return function()
+    if i<#all_items then
+      i=i+1
+      return all_items[i]
     end
   end
 end
 
-function draw_with_text(e, mx, my, text_colour)
+function draw_with_text(e, text_colour)
   e:DRAW()
   if e.text and text_colour then
     sys.api.COLOUR(text_colour)
@@ -36,10 +43,12 @@ end
 function map:DRAW(text_colour)
   love.graphics.push()
   love.graphics.translate(-self.cx*units,-self.cy*units)
-  self:each(draw_with_text, text_colour)
+  for e in self:ITEMS() do
+    draw_with_text(e,text_colour)
+  end
   if self.hx and self.hy then
     sys.api.COLOUR(1)
-    sys.api.CIRCLE(self.hx*16,self.hy*16,8)
+    sys.api.CIRCLE(self.hx*S,self.hy*S,8)
   end
   if self.zx and self.zy then
     if not self.zw then
@@ -49,9 +58,34 @@ function map:DRAW(text_colour)
       self.zh = 1
     end
     sys.api.COLOUR(5)
-    sys.api.RECT(self.zx*16-8,self.zy*16-8,self.zw*16,self.zh*16)
+    sys.api.RECT(self.zx*S-8,self.zy*S-8,self.zw*S,self.zh*S)
   end
   love.graphics.pop()
+end
+
+function map:UPDATE()
+  for e in self:ITEMS() do
+    if e.goal_t then
+      if e.goal_t<=0 then
+        if self:get(e.mx,e.my).id == e.id then
+          self:unset(e.mx,e.my)
+        end
+        self:set_entity(e.goal_mx,e.goal_my,e)
+        e.goal_t = nil
+      else
+        e.x = e.x + (e.goal_mx*S-e.x)/e.goal_t
+        e.y = e.y + (e.goal_my*S-e.y)/e.goal_t
+        e.goal_t = e.goal_t-1
+      end
+    end
+  end
+end
+
+function map:oob(x,y)
+  if x<1 or x>self.sx or y<1 or y>self.sy then
+    return true
+  end
+  return false
 end
 
 function map:get(mx,my)
@@ -66,32 +100,50 @@ function map:unset(mx,my)
   end
 end
 
-function map:set(mx,my,spr,c)
-  if spr ~= " " then
-    if not self[mx] then
-      self[mx] = {}
-    end
-    if mx > self.sx then
-      self.sx = mx
-    end
-    if my > self.sy then
-      self.sy = my
-    end
-    self[mx][my] = sys.api.ENT(mx*16,my*16,8,spr,c)
+function map:set_entity(mx,my,e)
+  e.mx = mx
+  e.my = my
+  e.x = mx*S
+  e.y = my*S
+  if not self[mx] then
+    self[mx] = {}
   end
+  self[mx][my] = e
   return self[mx][my]
 end
 
-function map:swap(mx,my,mx2,my2)
-  local e, e2 = self:get(mx,my), self:get(mx2,my2)
-  self[mx][my] = e2
-  if e2 then
-    e2.x, e2.y = mx*16, my*16
+function map:set(mx,my,spr,c)
+  if spr == " " then
+    self.unset(mx,my)
+    return
   end
-  self[mx2][my2] = e
-  if e then
-    e.x, e.y = mx2*16, my2*16
+  if mx > self.sx then
+    self.sx = mx
   end
+  if my > self.sy then
+    self.sy = my
+  end
+  local e = sys.api.ENT(0,0,8,spr,c)
+  return self:set_entity(mx,my,e)
+end
+
+function map:move(e,dx,dy,t)
+  if not e then
+    return
+  end
+  if not e.mx then
+    self:grab(e)
+  end
+  if self:oob(e.mx+dx,e.my+dy) then
+    return --can't move off the map, extend with map:set first
+  end
+  if not t or t==0 then
+    self:set_entity(e.mx+dx,e.my+dy,e)
+    return
+  end
+  e.goal_mx = e.mx+dx
+  e.goal_my = e.my+dy
+  e.goal_t = t
 end
 
 function map:fromLines(lines,c)
@@ -120,7 +172,7 @@ function map:empty()
 end
 
 function map:coord(x,y)
-  return math.floor((x+8+self.cx)/16), math.floor((y+8+self.cy)/16)
+  return math.floor((x+8+self.cx)/S), math.floor((y+8+self.cy)/S)
 end
 
 function map:highlight(mx,my)
@@ -139,18 +191,13 @@ end
 
 function map:grab(e,if_empty,in_zone)
   local mx, my = self:coord(e.x,e.y)
-  if mx<=0 or my<=0 or mx>self.sx or my>self.sy then
-    return nil
-  end
   if if_empty and self:get(mx,my) then
     return nil
   end
   if in_zone and (mx<self.zx or my<self.zy or mx>=self.zx+self.zw or my>=self.zy+self.zh) then
     return nil
   end
-  self[mx][my] = e
-  e.x, e.y = mx*16, my*16
-  return mx,my
+  return self:set_entity(mx,my,e)
 end
 
 function map:free(mx, my)

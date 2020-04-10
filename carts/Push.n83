@@ -41,17 +41,8 @@ function new_world(w,h)
   for i=1,w do
     world[i] = {}
     for j=1,h do
-      local south, east, obj
-      if j~=h then
-        south = RND(room_w-3)+1
-      end
-      if i~=w then
-        east = RND(room_h-3)+1
-      end
-      obj = { spr=random_fruit(), x=RND(room_w-2)+1, y=RND(room_h-2)+1 }
+      local obj = { spr=random_fruit(), x=RND(room_w-2)+1, y=RND(room_h-2)+1 }
       world[i][j] = {
-        south=south,
-        east=east,
         obj=obj
       }
     end
@@ -60,8 +51,6 @@ end
 
 function new_room(x,y)
   map = MAP()
-  bullets = LOOP()
-  mobs = LOOP()
   for i=1,room_w do
     local e = map:set(i,1,"1f9f1",10)
     e.name = "WALL"
@@ -74,43 +63,21 @@ function new_room(x,y)
     e = map:set(room_w,j,"1f9f1",10)
     e.name = "WALL"
   end
-  if world[x][y].south then
-    map:unset(world[x][y].south,room_h)
-    map:unset(world[x][y].south+1,room_h)
-  end
-  if world[x][y].east then
-    map:unset(room_w,world[x][y].east)
-    map:unset(room_w,world[x][y].east+1)
-  end
-  if world[x-1] and world[x-1][y].east then
-    map:unset(1,world[x-1][y].east)
-    map:unset(1,world[x-1][y].east+1)
-  end
-  if world[x][y-1] and world[x][y-1].south then
-    map:unset(world[x][y-1].south,1)
-    map:unset(world[x][y-1].south+1,1)
-  end
   local obj = world[x][y].obj
   if obj then
-    map:set(obj.x,obj.y,obj.spr,8)
+    map:set(obj.x,obj.y,obj.spr)
   end
   map:centre(W/2,H/2)
 end
 
 function draw_scene()
-  DRAW(player)
   DRAW(map)
-  DRAW(bullets)
-  DRAW(mobs)
 end
 
 
 function Cart:START()
   score = 0
   flags = {}
-  player = ENT(W/2, H/2, 8, "A", 5)
-  bullets = Empty
-  mobs = Empty
   map = MAP()
   new_world(5,3)
   mode_menu = MAINMENU({Main})
@@ -165,104 +132,10 @@ end
 function Main:START()
   score = 100
   recoil = 0
-  player = ENT(W/2, H/2, 8, "1f439", 0)
   wx = 1
   wy = 1
   new_room(wx,wy)
-end
-
-function Main:UPDATE()
-  if recoil>0 then
-    recoil = recoil - 1
-  end
-
-  map:move_and_repel(player)
-  local px,py = map:coord(player.x, player.y)
-  if px <= 1 then
-    wx = wx - 1
-    new_room(wx,wy)
-    player.x = player.x + room_w*16 - 32
-  else if px >= room_w then
-    wx = wx + 1
-    new_room(wx,wy)
-    player.x = player.x - room_w*16 + 32
-  end end
-  if py <= 1 then
-    wy = wy - 1
-    new_room(wx,wy)
-    player.y = player.y + room_h*16 - 32
-  else if py >= room_h then
-    wy = wy + 1
-    new_room(wx,wy)
-    player.y = player.y - room_h*16 + 32
-  end end
-
-  for bi,b in ITEMS(bullets) do
-    if not b:is_on_screen() then
-      bullets:remove(bi)
-    end
-    b:move()
-
-    for mi,m in ITEMS(mobs) do
-      if b:collides(m) then
-        mob_hit(
-          m,
-          function() mobs:remove(mi) end,
-          b,
-          function() bullets:remove(bi) end,
-          false
-        )
-      end
-    end
-  end
-
-  for mi, m in ITEMS(mobs) do
-    local i = RND(4)
-    local ndx = m.dx
-    local ndy = m.dy
-    if i==1 then
-      ndx, ndy, a = DIRECTION(player.x-m.x,player.y-m.y,mob_speed)
-    else
-      ndx, ndy, a = DIRECTION(RND(W)-m.x,RND(H)-m.y,mob_speed)
-    end
-    m.dx = (m.dx*7+ndx)/8
-    m.dy = (m.dy*7+ndy)/8
-    map:move_and_repel(m)
-    if player:collides(m) then
-      player_hit(
-        m,
-        function() mobs:remove(mi) end
-      )
-    end
-  end
-
-  if RND(30)==4 and mobs.length<max_mobs then
-    local nx,ny = room_location()
-    local m = ENT(nx, ny, 8, "1f41e", 1)
-    if not m:collides(player) then
-      m.dx = 0
-      m.dy = 0
-      mobs:add(m)
-    end
-  end
-end
-
-function mob_hit(m, m_rm, b, b_rm)
-  m_rm()
-  b_rm()
-end
-
-function fruit_hit(f, f_rm)
-  f_rm()
-  score = score + 10
-end
-
-function player_hit(m, m_rm)
-  score = score - 1
-  if score<=0 then
-    score = 0
-    MODE(Splash)
-  end
+  player = map:set(3,3,"1f331")
 end
 
 function draw_score()
@@ -288,19 +161,29 @@ function Main:DRAW()
   draw_score()
 end
 
-function Main:DRAG(ox, oy, x, y)
-  player.dx, player.dy, a = DIRECTION(x-player.x,y-player.y,player_speed)
-  if a<player_speed then player:stop() return end
+function Main:UPDATE()
+  map:UPDATE()
+end
 
-  if (recoil>0) then
-    return
+function Main:TOUCH(x, y)
+  local q = QUADRANT(x,y)
+  local dx = 0
+  local dy = 0
+  if q%2==0 then
+    dy = q-1
+  else
+    dx = q-2
   end
-  recoil=10
-
-  local b = ENT(player.x, player.y, 4, "1f538", 3)
-  b.dx = -player.dx
-  b.dy = -player.dy
-  bullets:add(b)
+  local push = map:get(player.mx+dx,player.my+dy)
+  if push then
+    if map:oob(player.mx+2*dx,player.my+2*dy) or map:get(player.mx+2*dx,player.my+2*dy) then
+      return
+    end
+    map:move(push,dx,dy,10)
+    map:move(player,dx,dy,10)
+  else
+    map:move(player,dx,dy,5)
+  end
 end
 
 function Main:RELEASE(x, y)

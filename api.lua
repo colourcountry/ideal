@@ -1,5 +1,5 @@
 api = {
-  MODEL="IDEAL-C4",
+  MODEL="IDEAL-C",
   API="n83",
   URL="IDEAL.COLOURCOUNTRY.NET",
   W=144,
@@ -119,7 +119,7 @@ function print_string(strg, x, y, anchor_x, anchor_y)
 end
 
 function api.SPR(spr, x, y)
-  lg.setColor(cur_fg)
+  lg.setColor(white)
   if quads[spr] then
     lg.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
   else
@@ -249,8 +249,10 @@ end
 
 function api.QUADRANT(x, y)
   local nwy = api.W*y
-  return (((api.H*x > nwy) and 0) or 1) +
-         (((api.H*(api.W-x) > nwy) and 0) or 2)
+  if api.H*x > nwy then
+    return ((api.H*(api.W-x) > nwy) and 0) or 3
+  end
+  return ((api.H*(api.W-x) > nwy) and 1) or 2
 end
 
 function api.POLAR(x,y,ox,oy)
