@@ -1,4 +1,4 @@
-love.window.setMode(800,600,{fullscreen=false, resizable = true, highdpi = true}) -- Just to make the screen resizable, and this method works with HighDpi
+love.window.setMode(400,700,{fullscreen=false, resizable = true, highdpi = true}) -- Just to make the screen resizable, and this method works with HighDpi
 
 lg = love.graphics
 --lg.setDefaultFilter("nearest")
@@ -18,6 +18,7 @@ sprite_radius=sprite_size/2
 
 atlases = {}
 quads = {}
+sprites = require("sprites")
 
 api = require("api")
 carts={}
@@ -39,9 +40,13 @@ function add_quad_page(hex)
   end
 end
 
-quad_pages = { "00", "1f1", "1f2", "1f3", "1f4", "1f5", "1f6",
+quad_pages = { "00", -- Basic font
+               "1f1", "1f2", "1f3", "1f4", "1f5", "1f6",
                "1f7", "1f9", "1fa", "20", "21", "22", "23", "24",
-               "25", "26", "27", "29", "2b"}
+               "26", "27", "29", "2b", -- emoji and symbols from Google
+               "25", -- Border box characters
+               "f00" -- (PUA) Wall tiles
+             }
 for i=1,#quad_pages do
   add_quad_page(quad_pages[i])
 end
@@ -69,36 +74,18 @@ cur_touches = {}
 mouse_touch_id = "MOUSE"
 twinkle = 0
 
-unitW = api.W*units
-unitH = api.H*units
-canvas = lg.newCanvas(unitW,unitH)
-scale = math.min((screenW-20)/api.W , (screenH-20)/unitH) -- Scale to the nearest integer
-translateX = math.floor((screenW - unitW * scale)/2)
-translateY = math.floor((screenH - unitH * scale)/2)
-
-function draw()
-  lg.setFont(system_font)
-  lg.setColor(cur_fg)
-  lg.setCanvas(canvas)
-  twinkle = 0
-end
+canvasW = api.W*units
+canvasH = api.H*units
+canvas = lg.newCanvas(canvasW,canvasH)
+scale = math.min((screenW-20)/canvasW , (screenH-20)/canvasH) -- Scale to the nearest integer
+translateX = (screenW-canvasW*scale)/2
+translateY = (screenH-canvasH*scale)/2
 
 function drawTimers()
   local ut = update_time*screenH*60
   lg.setColor({0,0,0,1})
   local dt = draw_time*screenH*60
   lg.rectangle("fill",0,ut,4,dt)
-end
-
-function flush()
-  lg.setCanvas() -- Set rendering to the screen
-	lg.push() -- Push transformation state, The translate and scale will affect everything below until lg.pop()
-	lg.translate( translateX, translateY ) -- Move to the appropiate top left corner
-	lg.scale(scale,scale) -- Scale
-  lg.setColor(white)
-	lg.draw(canvas) -- Draw the canvas
-	lg.pop() -- pop transformation state
-  api.T = api.T + 1
 end
 
 function switch_cart(cartid)
@@ -133,11 +120,21 @@ end
 
 function love.draw()
   draw_time = love.timer.getTime()
-  draw()
+  lg.setFont(system_font)
+  lg.setColor(cur_fg)
+  lg.setCanvas(canvas)
+  twinkle = 0
   if cur_mode.DRAW then
     cur_mode:DRAW()
   end
-  flush()
+  lg.setCanvas() -- Set rendering to the screen
+	lg.push() -- Push transformation state, The translate and scale will affect everything below until lg.pop()
+	lg.translate( translateX, translateY ) -- Move to the appropiate top left corner
+	lg.scale(scale,scale) -- Scale
+  lg.setColor(white)
+	lg.draw(canvas,0,0) -- Draw the canvas
+	lg.pop() -- pop transformation state
+  api.T = api.T + 1
   draw_time = love.timer.getTime() - draw_time
   drawTimers()
 end
@@ -234,6 +231,11 @@ api.__index = api
 
 function environment()
   local o = {}
+  local apikeys = {}
+  for k, v in pairs(api) do
+    apikeys[#apikeys] = k
+  end
+  api.LOG("Set up new environment with metatable",apikeys)
   setmetatable(o, api)
   return o
 end
@@ -242,7 +244,8 @@ end
 return {
   carts=carts,
   api=api,
+  sprites=sprites,
   memory=memory,
   switch_cart=switch_cart,
-  environment=environment,
+  environment=environment(),
 }

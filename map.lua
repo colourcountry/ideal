@@ -123,7 +123,8 @@ function map:set(mx,my,spr,c)
   if my > self.sy then
     self.sy = my
   end
-  local e = sys.api.ENT(0,0,8,spr,c)
+  spr = sys.sprites.names[spr] or spr
+  local e = sys.api.ENT(0,0,8,spr,c,self.flagsets[spr])
   return self:set_entity(mx,my,e)
 end
 

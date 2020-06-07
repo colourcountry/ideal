@@ -5,9 +5,8 @@ api = {
   W=144,
   H=240,
   T=0,
-  L=6,
+  L=10,
   S=16,
-  EXEC=loadstring, -- need this to load stuff in the first place
   FLR=math.floor,
   CEIL=math.ceil,
   MAX=math.max,
@@ -17,11 +16,21 @@ api = {
   SQRT=math.sqrt,
   UPPER=string.upper,
   LOWER=string.lower,
+  MID=string.sub,
   SORT=table.sort
 }
 
 cur_x = 0
 cur_y = 0
+
+function api.EXEC(chunk,chunkid)
+   -- this is kind of horrible but works for the moment
+  ok, result = pcall(loadstring, "--"..(chunkid or "anonymous").."\nsetfenv(1,sys.environment)\n"..chunk)
+  if (ok) then
+    return result
+  end
+  return "ERROR"
+end
 
 function api.STR(o)
   if o == nil then
@@ -61,6 +70,11 @@ function api.ITEMS(iterable)
   return pairs(iterable)
 end
 
+function api.KEY(x, y, ch)
+  if cur_mode.KEY then
+    cur_mode:KEY(x, y, ch)
+  end
+end
 
 function api.TOUCH(x, y)
   if cur_mode.TOUCH then
@@ -106,25 +120,27 @@ function print_string(strg, x, y, anchor_x, anchor_y)
   if (not strg) then
     strg = "-"
   end
-  if (not anchor_x) then
-    anchor_x = -1
-  end
-  if (not anchor_y) then
-    anchor_y = 1
-  end
+  strg = api.STR(strg):upper()
   if (not texts[strg]) then
     texts[strg] = lg.newText(system_font, strg)
   end
-  print_text(texts[strg], x, y, anchor_x, anchor_y)
+  print_text(texts[strg], x, y, anchor_x or 1, anchor_y or 1)
 end
 
 function api.SPR(spr, x, y)
   lg.setColor(white)
+  if sys.sprites.names[spr] then
+    spr = sys.sprites.names[spr]
+  end
   if quads[spr] then
     lg.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
   else
-    lg.draw(atlases["1f344"], quads["1f344"],(x-sprite_radius)*units,(y-sprite_radius)*units)
+    lg.draw(atlases["1f196"], quads["1f196"],(x-sprite_radius)*units,(y-sprite_radius)*units)
   end
+end
+
+function api.SPRGROUP(name)
+  return sys.sprites.groups[name]
 end
 
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
@@ -136,15 +152,15 @@ end
 
 function api.PRINT(strg, x, y, anchor_x, anchor_y)
   if not x then x=cur_x end
-  if not y then y=cur_y+api.L*2 end
+  if not y then y=cur_y+api.L end
   print_string(strg, x, y, anchor_x, anchor_y)
 end
 
 function print_text(text, x, y, anchor_x, anchor_y)
   local width = text:getWidth()/units
   local height = system_font_size
-  local ax =     x-(anchor_x+1)*width/2
-  local ay =     y-(anchor_y+1)*height/2
+  local ax =     x-(1-anchor_x)*width/2
+  local ay =     y-(1-anchor_y)*height/2
   cur_x = ax
   cur_y = ay
 
@@ -153,20 +169,23 @@ function print_text(text, x, y, anchor_x, anchor_y)
 end
 
 function api.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
-  for i=1,#strgs do
-    api.PRINT(strgs[i], x, y+(i-1)*system_font_size, anchor_x, anchor_y)
+  for i,s in api.ITEMS(strgs) do
+    if (i==1) then
+      api.PRINT(s, x, y, anchor_x, anchor_y)
+    else
+      api.PRINT(s, nil, nil, 1, 0)
+    end
   end
   return #strgs
 end
 
-function api.SPLIT(strg, pixels, atSpace)
-  local chars = pixels/6
+function api.SPLIT(strg, chars, at)
   local l = {}
   while #strg>chars do
     local c, skip = chars, 0
-    if (atSpace) then
+    if (at) then
       local test = strg:sub(1,c):reverse()
-      local s, e = test:find(" ")
+      local s, e = test:find(at)
       if (s) then
         skip = 1
         c = c-s+1
@@ -248,11 +267,20 @@ function api.GO(mode)
 end
 
 function api.QUADRANT(x, y)
-  local nwy = api.W*y
-  if api.H*x > nwy then
-    return ((api.H*(api.W-x) > nwy) and 0) or 3
+  if x==y or x==-y then
+    local p = love.math.random()
+    if p < 0.5 then
+      y = y*2
+    else
+      y = y/2
+    end
   end
-  return ((api.H*(api.W-x) > nwy) and 1) or 2
+  if x > y then
+    if -x > y then return 0,-1 else return 1,0 end
+  end
+  if -x > y then return -1,0 end
+  if x == 0 and y == 0 then return 0,0 end
+  return 0,1
 end
 
 function api.POLAR(x,y,ox,oy)
@@ -290,6 +318,9 @@ function api.SHUFFLE(array)
   end
 end
 
+function api.CHOOSE(array)
+  return array[math.random(1,#array)]
+end
 
 -------------------------------------------------------------------- Object "methods"
 -- To make it a bit more BASICy, these global functions just call named methods of the object
@@ -306,7 +337,7 @@ end
 -------------------------------------------------------------------- Object types
 
 entid = 1
-function api.ENT(x, y, r, spr, c)
+function api.ENT(x, y, r, spr, c, flags)
   local ent = require("ent")
   local o = {
     x=x,
@@ -314,11 +345,16 @@ function api.ENT(x, y, r, spr, c)
     r=r,
     id=entid,
     spr=spr,
-    c=c
+    c=c,
+    flags=flags
   }
   entid = entid+1
   setmetatable(o, ent)
   return o
+end
+
+function api.IS(e,k)
+  return e and e.flags and e.flags[k]
 end
 
 function api.LOOP()
@@ -331,12 +367,21 @@ function api.LOOP()
 end
 
 mapid = 1
-function api.MAP(cx, cy)
+function api.MAP(flags)
   local map = require("map")
+  local flagsets = {}
+  if flags then
+    for k,f in pairs(flags) do
+      k = sys.sprites.names[k] or k
+      flagsets[k] = {}
+      for i,v in pairs(f) do
+        flagsets[k][v] = true
+      end
+    end
+  end
   local o = {
-    cx=cx,
-    cy=cy,
-    id=mapid
+    id=mapid,
+    flagsets=flagsets
   }
   mapid = mapid+1
   setmetatable(o, map)

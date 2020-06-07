@@ -20,16 +20,12 @@ debug = false
 player_speed = 3
 mob_speed = 0.5
 max_mobs = 10
-room_w = 9
+room_w = 10
 room_h = 13
 recoil = 0
 
-all_fruit = { "1f347", "1f348", "1f349", "1f34a", "1f34b",
-              "1f34c", "1f34d", "1f34e", "1f34f", "1f350",
-              "1f351", "1f352", "1f353" }
-
 function random_fruit()
-  return all_fruit[RND(#all_fruit)]
+  return CHOOSE(SPRGROUP("food-fruit"))
 end
 
 function room_location()
@@ -50,20 +46,23 @@ function new_world(w,h)
 end
 
 function new_room(x,y)
-  map = MAP()
-  for i=1,room_w do
-    local e = map:set(i,1,"1f9f1",10)
-    e.name = "WALL"
-    e = map:set(i,room_h,"1f9f1",10)
-    e.name = "WALL"
-  end
-  for j=2,room_h-1 do
-    local e = map:set(1,j,"1f9f1",10)
-    e.name = "WALL"
-    e = map:set(room_w,j,"1f9f1",10)
-    e.name = "WALL"
-  end
   local obj = world[x][y].obj
+
+  map = MAP({
+    ["brick wall face"]={"solid"},
+    ["border right"]={"solid"},
+    ["border left"]={"solid"},
+    [obj.spr]={"pushable"}
+  })
+
+  for i=1,room_w-1 do
+    map:set(i,1,"brick wall face",10)
+    map:set(i,room_h,"brick wall face",10)
+  end
+  for j=1,room_h do
+    map:set(1,j,"border right",10)
+    map:set(room_w,j,"border left",10)
+  end
   if obj then
     map:set(obj.x,obj.y,obj.spr)
   end
@@ -135,7 +134,7 @@ function Main:START()
   wx = 1
   wy = 1
   new_room(wx,wy)
-  player = map:set(3,3,"1f331")
+  player = map:set(3,3,"1f949")
 end
 
 function draw_score()
@@ -165,21 +164,21 @@ function Main:UPDATE()
   map:UPDATE()
 end
 
-function Main:TOUCH(x, y)
-  local q = QUADRANT(x,y)
-  local dx = 0
-  local dy = 0
-  if q%2==0 then
-    dy = q-1
-  else
-    dx = q-2
-  end
-  local push = map:get(player.mx+dx,player.my+dy)
-  if push then
-    if map:oob(player.mx+2*dx,player.my+2*dy) or map:get(player.mx+2*dx,player.my+2*dy) then
-      return
-    end
-    map:move(push,dx,dy,10)
+function Main:DRAG(ox, oy, x, y)
+  if player.goal_t then return end
+  local mx,my = map:coord(x,y)
+  local dx,dy = QUADRANT(mx-player.mx,my-player.my)
+
+  local neighbour = map:get(player.mx+dx,player.my+dy)
+  if IS(neighbour,"solid") then return end
+
+  if IS(neighbour,"pushable") then
+    if map:oob(player.mx+2*dx,player.my+2*dy) then return end
+
+    local space = map:get(player.mx+2*dx,player.my+2*dy)
+    if IS(space,"solid") then return end
+
+    map:move(neighbour,dx,dy,10)
     map:move(player,dx,dy,10)
   else
     map:move(player,dx,dy,5)

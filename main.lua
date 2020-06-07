@@ -19,12 +19,12 @@ function love.load()
 
   function get_cart(cartid)
     if not sys.carts[cartid] then
-      sys.api.LOG(cartid,": not indexed")
-    end
-
-    if sys.carts[cartid].loaded then
-      sys.api.LOG(cartid,": already loaded")
-      return sys.carts[cartid]
+      sys.api.LOG(cartid,": not indexed, trying anyway")
+    else
+      if sys.carts[cartid].loaded then
+        sys.api.LOG(cartid,": already loaded")
+        return sys.carts[cartid]
+      end
     end
 
     local path = "carts/"..cartid
@@ -45,9 +45,7 @@ function love.load()
       sys.api.LOG(mem_path,": no memory found")
     end
 
-    cur_env = sys.environment()
-    -- this is kind of horrible but works for the moment
-    local code = loadstring("--"..cartid.."\nsetfenv(1,cur_env)\n"..chunk)
+    local code = sys.api.EXEC(chunk,cartid)
     if not code then
       sys.api.LOG(path,": chunk was not callable")
       return "?CALL"
@@ -63,7 +61,7 @@ function love.load()
       new_cart = nil
       return "?ANON"
     end
-    if new_cart.name ~= sys.carts[cartid].name then
+    if sys.carts[cartid] and new_cart.name ~= sys.carts[cartid].name then
       sys.api.LOG(path,": cart was named ",new_cart.name,", wanted ",sys.carts[cartid].name)
       new_cart = nil
       return "?NAME"
@@ -95,17 +93,8 @@ function love.load()
     end
   end
 
-  for k,v in pairs(arg) do
-    local cart_arg = string.gsub(v, "(.*/)(.*)", "%2")
-    if sys.carts[cart_arg] then
-      cart_arg_found = cart_arg
-    else
-      sys.api.LOG("Couldn't find requested cart ",cart_arg)
-    end
-  end
-
-  if cart_arg_found then
-    sys.switch_cart(cart_arg_found)
+  if arg[2] and string.match(arg[2], "carts/") then
+    sys.switch_cart(string.gsub(arg[2], "(.*carts/)(.*)", "%2"))
   else
     sys.api.EJECT() -- load carousel
   end

@@ -32,9 +32,7 @@ function ent:stop()
 end
 
 function ent:collides(other,xoff,yoff)
-  if xoff == nil then xoff = 0 end
-  if yoff == nil then yoff = 0 end
-  local dx, dy, sr = self.x-xoff-other.x, self.y-yoff-other.y, self.r+other.r
+  local dx, dy, sr = self.x-(xoff or 0)-other.x, self.y-(yoff or 0)-other.y, self.r+other.r
   if math.abs(dx) < sr and math.abs(dy) < sr then
     return { dx=api.SIGN(dx)*sr-dx, dy=api.SIGN(dy)*sr-dy }
   end
