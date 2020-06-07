@@ -24,10 +24,6 @@ room_w = 10
 room_h = 13
 recoil = 0
 
-function random_fruit()
-  return CHOOSE(SPRGROUP("food-fruit"))
-end
-
 function room_location()
   return 32+RND(room_w*16-48)-map.cx,32+RND(room_h*16-48)-map.cy
 end
@@ -37,7 +33,11 @@ function new_world(w,h)
   for i=1,w do
     world[i] = {}
     for j=1,h do
-      local obj = { spr=random_fruit(), x=RND(room_w-2)+1, y=RND(room_h-2)+1 }
+      local obj = {
+        spr=CHOOSE(SPRGROUP("food-fruit")),
+        x=RND(room_w-2)+1,
+        y=RND(room_h-2)+1
+      }
       world[i][j] = {
         obj=obj
       }

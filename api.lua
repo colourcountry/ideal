@@ -51,6 +51,10 @@ function api.STR(o)
   end
 end
 
+function api.CHARAT(s,i)
+  return s:sub(i,i)
+end
+
 function api.LOG(...)
   s = tostring(api.T)..": "
   for k,v in pairs({...}) do
@@ -306,8 +310,12 @@ end
 
 function api.DAILY()
   local d = tonumber(os.date("%Y%m%d"))
-  api.LOG("Resetting RNG to "..tostring(d))
-  love.math.setRandomSeed(d)
+  api.RANDOMIZE(d)
+end
+
+function api.RANDOMIZE(seed)
+  api.LOG("Resetting RNG to "..tostring(seed))
+  love.math.setRandomSeed(seed)
   return d
 end
 
@@ -326,6 +334,7 @@ end
 -- To make it a bit more BASICy, these global functions just call named methods of the object
 
 function api.DRAW(drawable)
+  if not drawable then return end
   if drawable.DRAW then
     drawable:DRAW()
   else
