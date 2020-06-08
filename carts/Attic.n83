@@ -10,9 +10,9 @@ Messages = {
 
 Empty = LOOP() -- convenience
 
-Splash = MODE({ name="Splash" })
-Menu = MODE({ name="Main menu" })
-Main = MODE({ name="Game" })
+Splash = MODE("Splash")
+Menu = MODE("Main menu")
+Main = MODE("Game")
 
 bg = 8
 msg = ""
@@ -141,29 +141,14 @@ end
 function Cart:START()
   score = 0
   flags = {}
-  new_world()
-  mode_menu = MAINMENU({Main})
-  GO(Splash)
-end
-
-------------------------------------------------------------------- splash
-
-function Splash:UPDATE()
-  if T>50 then
-    GO(Menu)
-  end
-end
-
-function Splash:DRAW()
-  COLOUR(-1,8)
-  CLS()
-  BORDER(11)
-  TITLE(UPPER(Cart.name), W/2, H/4, 0, 0)
-  COLOUR(0)
-  PRINT(UPPER(Messages.credit), W/2, H-L, 0, 0)
+  GO(Menu)
 end
 
 ------------------------------------------------------------------- menu
+
+function Menu:START()
+  mode_menu = MAINMENU({Main})
+end
 
 function Menu:TOUCH(x, y)
   mode_menu:handle_touch(x, y)
@@ -192,6 +177,7 @@ end
 ------------------------------------------------------------------- main
 
 function Main:START()
+  new_world()
   score = 100
   recoil = 0
   new_room(1,1)

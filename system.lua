@@ -6,6 +6,7 @@ lg = love.graphics
 -- Various properties of the system.
 screenW,screenH = lg.getDimensions()
 units=4 --convert in-world units (144x240) to pre-scaling screen coords
+mode_panic_time = 600 -- if a mode is this old (in seconds) then it will automatically be restarted
 
 lg.setLineWidth(units)
 
@@ -25,8 +26,12 @@ carts={}
 
 memory={}
 
+-- remind myself which globals i define further down
+
 cur_cart = nil
-cur_cartid =  nil -- this is available during cart load
+cur_cartid = nil -- this is available during cart load
+cur_modes = {} -- register of modes defined in this cart
+mode_start_time = nil
 
 function add_quad_page(hex)
   local tile_size = sprite_size * units
@@ -90,6 +95,7 @@ end
 
 function switch_cart(cartid)
   cur_cartid = cartid
+  cur_modes = {}
   api.LOG("Switching to",cur_cartid)
   cur_cart = get_cart(cur_cartid)
   if cur_cart.loaded then
@@ -101,6 +107,10 @@ end
 
 function love.update()
   update_time = love.timer.getTime()
+  if mode_start_time and mode_start_time+mode_panic_time<update_time then
+    api.LOG(update_time,": ",mode_panic_time," seconds elapsed since mode began, panic!")
+    api.RESET()
+  end
   if (cur_mode.frame) then
     cur_mode:frame()
   end
@@ -139,7 +149,6 @@ function love.draw()
   drawTimers()
 end
 
--- Keys emulate touches. There is no NEMO-83 API for actual keys.
 keys = {
   right={api.W, api.H/2},
   left={0, api.H/2},
@@ -179,7 +188,6 @@ function handle_touch(id,x,y)
   }
   local mx = (cur_touches[id].x-translateX)/scale/units
   local my = (cur_touches[id].y-translateY)/scale/units
-  api.LOG("New touch",id,"currently",cur_touches)
   api.TOUCH(mx,my)
 end
 
@@ -206,10 +214,8 @@ function handle_release(id,x,y)
   if cur_touches[id] then
     local mox = (cur_touches[id].ox-translateX)/scale/units
     local moy = (cur_touches[id].oy-translateY)/scale/units
-    api.LOG("Releasing touch id",id)
     api.RELEASE(mox,moy,mx,my)
   else
-    api.LOG("Releasing unknown touch id",id)
     api.RELEASE(mx,my,mx,my)
   end
   cur_touches[id] = nil
@@ -247,5 +253,5 @@ return {
   sprites=sprites,
   memory=memory,
   switch_cart=switch_cart,
-  environment=environment(),
+  environment=environment,
 }

@@ -18,18 +18,9 @@ function love.load()
   end
 
   function get_cart(cartid)
-    if not sys.carts[cartid] then
-      sys.api.LOG(cartid,": not indexed, trying anyway")
-    else
-      if sys.carts[cartid].loaded then
-        sys.api.LOG(cartid,": already loaded")
-        return sys.carts[cartid]
-      end
-    end
-
     local path = "carts/"..cartid
     sys.api.LOG(path,": reading file")
-    local chunk = love.filesystem.read(path)
+    chunk = love.filesystem.read(path)
 
     if not chunk then
       sys.api.LOG(path,": not found")
@@ -76,7 +67,7 @@ function love.load()
     sys.carts[cartid].loaded = true
     sys.carts[cartid].id = cartid
     sys.api.LOG(path,": loaded successfully")
-    return sys.carts[cartid]
+    return new_cart
   end
 
   for k,v in pairs(love.filesystem.getDirectoryItems("carts")) do

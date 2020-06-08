@@ -10,7 +10,7 @@ messages = {
 
 locs = {}
 
-Main = MODE({ name="Memory" })
+Main = MODE("Main")
 
 function Main:UPDATE()
 end

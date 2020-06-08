@@ -1,5 +1,5 @@
 api = {
-  MODEL="IDEAL-C",
+  MODEL="IDEAL-5",
   API="n83",
   URL="IDEAL.COLOURCOUNTRY.NET",
   W=144,
@@ -25,7 +25,7 @@ cur_y = 0
 
 function api.EXEC(chunk,chunkid)
    -- this is kind of horrible but works for the moment
-  ok, result = pcall(loadstring, "--"..(chunkid or "anonymous").."\nsetfenv(1,sys.environment)\n"..chunk)
+  ok, result = pcall(loadstring, "--"..(chunkid or "anonymous").."\nsetfenv(1,sys.environment())\n"..chunk)
   if (ok) then
     return result
   end
@@ -237,6 +237,7 @@ function api.CLS()
 end
 
 function api.EJECT()
+  api.LOG("Eject")
   cur_cart = get_cart("_carousel."..api.API)
   cur_cart.__carts = carts -- carousel has secret access to this
   cur_cart.__switch = switch_cart
@@ -252,6 +253,12 @@ function api.ERROR(msg)
   api.RESTART()
 end
 
+function api.RESET()
+  api.LOG("Resetting cart "..cur_cart.name)
+  cur_cart = get_cart(cur_cartid)
+  api.RESTART()
+end
+
 function api.RESTART()
   api.LOG("Restarting cart "..cur_cart.name)
   api.T = 0
@@ -263,10 +270,18 @@ function api.RESTART()
 end
 
 function api.GO(mode)
-  cur_mode = mode
-  api.LOG("Entering",mode)
-  if mode.START then
-    mode:START()
+  api.LOG("Reloading cart as ",mode)
+  cur_modes = {}
+  cur_cart = get_cart(cur_cartid)
+  cur_mode = cur_modes[mode.name]
+  if not cur_mode then
+    api.ERROR("?MODENAME")
+    return
+  end
+  api.LOG("Entering",cur_mode)
+  mode_start_time = love.timer.getTime()
+  if cur_mode.START then
+    cur_mode:START()
   end
 end
 
@@ -417,11 +432,9 @@ function api.MAINMENU(modelist)
   return api.MENU(m)
 end
 
-function api.MODE(o)
+function api.MODE(name,parent)
   local mode = require("mode")
-  if not o then
-    o = {}
-  end
+  o = { name=name, parent=parent }
   if (o.parent) then
     o.parent.__index = o.parent
     setmetatable(o, o.parent)
@@ -429,6 +442,7 @@ function api.MODE(o)
     setmetatable(o, mode)
   end
   o:init()
+  cur_modes[o.name] = o
   return o
 end
 
@@ -456,6 +470,11 @@ function api.INFOMODE(name,instructions)
   return o
 end
 
+-- Memory functions
+-- You can use POST to set as many fields as you like, for high scores and such.
+-- but carts do not have access to these.
+-- Readable state is handled by SAVE and is subject to validation rules:
+
 function api.MEMORY()
   local cartid = cur_cartid
   cur_cart = get_cart("_memory."..api.API)
@@ -465,7 +484,7 @@ function api.MEMORY()
   api.RESTART()
 end
 
-function api.LOCATION(loc,value,name,icon)
+function api.FIELD(loc,value,name,icon)
   if not memory[cur_cartid] then memory[cur_cartid] = {} end
   if memory[cur_cartid][loc] then
     api.LOG("Retaining existing value ",memory[cur_cartid][loc].value," for ",name)
@@ -478,17 +497,56 @@ function api.LOCATION(loc,value,name,icon)
   return loc
 end
 
-function api.POKE(loc,value)
+function validate_state(v)
+  if type(v)=='number' then return v end
+  if type(v)=='string' then
+    return string.sub(v,1,80)
+  end
+  if type(v)~='table' then return nil end
+
+  local char_allowance = 0
+  for i=1,10 do
+    if type(v[i])=='string' then
+      char_allowance = char_allowance + 8
+    end
+  end
+
+  local s = {}
+  for i=1,10 do
+    if type(v[i])=='string' and #v[i]<char_allowance then
+      char_allowance = char_allowance - #v[i]
+      s[i] = v[i]
+    else
+      if type(v[i])=='number' then
+        s[i] = v[i]
+      end
+    end
+  end
+  api.LOG("Saving strings as ",s)
+  return s
+end
+
+function api.POST(loc,value)
+  if loc=="__state__" then
+    safe_value = validate_state(value)
+    api.LOG("Requested save state ",value)
+    api.LOG("Actually saved state ",safe_value)
+    value = safe_value
+  end
   if not memory[cur_cartid] then memory[cur_cartid] = {} end
   if not memory[cur_cartid][loc] then memory[cur_cartid][loc] = {} end
   memory[cur_cartid][loc].value = value
   save_memory(cur_cartid)
 end
 
-function api.PEEK(loc)
-  api.LOG("Peeking ",loc," from ",memory[cur_cartid])
-  if not memory[cur_cartid] or not memory[cur_cartid][loc] then return end
-  return memory[cur_cartid][loc].value
+function api.SAVE(state)
+  api.POST("__state__",state)
+end
+
+function api.LOAD()
+  local r = memory[cur_cartid] and memory[cur_cartid]["__state__"] and memory[cur_cartid]["__state__"].value
+  api.LOG("Loaded state ",value)
+  return r
 end
 
 return api

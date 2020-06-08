@@ -39,7 +39,7 @@ end
 
 
 
-Main = MODE({ name="Main carousel" })
+Main = MODE("Main")
 
 function Main:UPDATE()
   if (#cartItems==0) then

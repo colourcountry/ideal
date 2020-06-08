@@ -8,7 +8,7 @@ function Cart:START()
   GO(Main)
 end
 
-Main = MODE()
+Main = MODE("Main")
 
 function Main:UPDATE()
   if Cart.__debug and Cart.__quit then
