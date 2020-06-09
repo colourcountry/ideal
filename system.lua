@@ -89,11 +89,11 @@ shader_code = [[
         }
 ]]
 
-function matrix_for_colour(r,g,b)
+function matrix_for_colour(c)
   return {
-            {r, g, b, 0},
-            {b, r, g, 0},
-            {g, b, r, 0},
+            {c[1], c[2], c[3], 0},
+            {c[3], c[1], c[2], 0},
+            {c[2], c[3], c[1], 0},
             {0, 0, 0, 1},
   }
 end
@@ -102,7 +102,7 @@ function new_canvas(w, h)
   if w==0 or h==0 then return end
   local c = lg.newCanvas(w*units,h*units)
   local s = lg.newShader(shader_code)
-  s:send("transform",matrix_for_colour(1,0,0))
+  s:send("transform",matrix_for_colour({1,0,0}))
   s:send("bias",{0, 0, 0, 0})
   return {
     w=w,
@@ -115,11 +115,11 @@ function new_canvas(w, h)
     stop=function()
       lg.pop()
     end,
-    paste=function()
-      lg.draw(c,0,0)
+    paste=function(_,x,y)
+      lg.draw(c,x or 0,y or 0)
     end,
-    colour=function(r,g,b)
-      s:send("transform",matrix_for_colour(r,g,b))
+    colour=function(_,cl)
+      s:send("transform",matrix_for_colour(cl))
     end
   }
 end
@@ -143,13 +143,22 @@ function drawTimers()
   lg.rectangle("fill",0,ut,4,dt)
 end
 
-function switch_cart(cartid)
+function switch_cart(cartid,mode,secrets)
   cur_cartid = cartid
   cur_modes = {}
   api.LOG("Switching to",cur_cartid)
   cur_cart = get_cart(cur_cartid)
   if cur_cart.loaded then
-    api.RESTART()
+    if mode and cur_modes[mode] then
+      mode_start_time = false -- disable timer for special carts
+      cur_mode = cur_modes[mode]
+      if cur_mode.START then
+        cur_mode:START(secrets)
+      end
+    else
+      mode_start_time = love.timer.getTime()
+      api.RESTART() -- restart safely
+    end
   else
     api.ERROR(cur_cart)
   end
@@ -211,7 +220,7 @@ keys['return'] = {api.W/2,api.H/2}
 
 function love.keypressed(key, scancode, isRepeat)
   if (scancode=='escape') then
-    if cur_cart.SHUTDOWN then
+    if cur_cart and cur_cart.SHUTDOWN then
       cur_cart:SHUTDOWN()
     end
     api.EJECT()

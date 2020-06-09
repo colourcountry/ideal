@@ -23,8 +23,8 @@ function love.load()
     chunk = love.filesystem.read(path)
 
     if not chunk then
-      sys.api.LOG(path,": not found")
-      return "?FILE"
+      sys.api.LOG(path,": file not found")
+      return "Not available"
     end
 
     local mem_path = "memory/"..cartid
@@ -39,28 +39,28 @@ function love.load()
     local code = sys.api.EXEC(chunk,cartid)
     if not code then
       sys.api.LOG(path,": chunk was not callable")
-      return "?CALL"
+      return "Bad cart"
     end
 
     new_cart = code()
     if not new_cart then
       sys.api.LOG(path,": chunk didn't return an object")
-      return "?OBJ"
+      return "Bad cart"
     end
     if not new_cart.name then
       sys.api.LOG(path,": returned object didn't have a 'name'")
       new_cart = nil
-      return "?ANON"
+      return "Bad cart"
     end
     if sys.carts[cartid] and new_cart.name ~= sys.carts[cartid].name then
       sys.api.LOG(path,": cart was named ",new_cart.name,", wanted ",sys.carts[cartid].name)
       new_cart = nil
-      return "?NAME"
+      return "Bad cart"
     end
     if new_cart.api ~= sys.api.API then
-      sys.api.LOG(path..": cart was for API ",sys.carts[cartid].api,", wanted ",sys.api.API)
+      sys.api.LOG(path..": cart was for"..sys.carts[cartid].api..", wanted "..sys.api.API)
       new_cart = nil
-      return "?API"
+      return "Incompatible cart"
     end
 
     sys.carts[cartid] = new_cart
@@ -87,6 +87,6 @@ function love.load()
   if arg[2] and string.match(arg[2], "carts/") then
     sys.switch_cart(string.gsub(arg[2], "(.*carts/)(.*)", "%2"))
   else
-    sys.api.EJECT() -- load carousel
+    sys.switch_cart("_splash.n83")
   end
 end

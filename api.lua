@@ -5,7 +5,7 @@ api = {
   W=144,
   H=240,
   T=0,
-  L=10,
+  L=8,
   S=16,
   FLR=math.floor,
   CEIL=math.ceil,
@@ -122,35 +122,44 @@ texts = {}
 
 function get_codepoint(utf8)
   if #utf8>1 then return "?" end --FIXME
-  return string:byte(utf8)
+  return utf8:byte(1)
 end
 
-function print_string(strg, x, y, anchor_x, anchor_y)
+function print_string(strg, x, y, anchor_x, anchor_y, scale)
   if (not strg) then
-    strg = "-"
+    strg = "nil"
   end
-  strg = api.STR(strg):upper()
-  if (not texts[strg]) then
-    local codepoints = {}
-    for utf8 in str:gmatch("[\0-\x7F\xC2-\xF4][\x80-\xBF]*") do
-      codepoints[#codepoints] = get_codepoint(utf8)
-    end
-    local c = new_canvas(api.S*#codepoints,api.S)
-    c:start()
-    for i,cp in ipairs(codepoints) do
-      api.SPR(cp,i*api.S,0,1,0)
-    end
-    texts[strg] = c
+  strg = api.STR(strg)
+
+  key = strg.." - "..api.STR(cur_fg)
+  if texts[key] then
+    print_text(texts[key], x, y, anchor_x or 1, anchor_y or 1, scale)
+    return
   end
-  print_text(texts[strg], x, y, anchor_x or 1, anchor_y or 1)
+
+  local codepoints = {}
+  for utf8 in strg:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+    codepoints[#codepoints+1] = get_codepoint(utf8)
+  end
+  local c = new_canvas(api.S*#codepoints,api.S)
+  c:start()
+  c:colour(cur_fg)
+  for i,cp in ipairs(codepoints) do
+    api.SPR(cp,i*api.S-api.S/2,api.S/2)
+  end
+  c:stop()
+
+  texts[key]=c
+  print_text(c, x, y, anchor_x or 1, anchor_y or 1, scale)
 end
 
 function api.SPR(spr, x, y)
-  if sys.sprites.names[spr] then
-    spr = sys.sprites.names[spr]
-  end
   if type(spr)=="string" then
-    spr = tonumber(spr,16)
+    if sys.sprites.names[spr] then
+      spr = sys.sprites.names[spr]
+    else
+      spr = tonumber(spr,16)
+    end
   end
   if quads[spr] then
     lg.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
@@ -164,34 +173,39 @@ function api.SPRGROUP(name)
 end
 
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
-  lg.push()
-  lg.scale(2)
-  print_string(strg, x/2, y/2, anchor_x, anchor_y)
-  lg.pop()
-end
-
-function api.PRINT(strg, x, y, anchor_x, anchor_y)
-  if not x then x=cur_x end
-  if not y then y=cur_y+api.L end
   print_string(strg, x, y, anchor_x, anchor_y)
 end
 
-function print_text(text, x, y, anchor_x, anchor_y)
-  local width = text:getWidth()/units
-  local height = system_font_size
-  local ax =     x-(1-anchor_x)*width/2
-  local ay =     y-(1-anchor_y)*height/2
-  cur_x = ax
-  cur_y = ay
+function api.PRINT(strg, x, y, anchor_x, anchor_y)
+  if not x then x=cur_x anchor_x=1 end
+  if not y then y=cur_y+api.L anchor_y=1 end
+  print_string(strg, x, y, anchor_x, anchor_y, 0.5)
+end
 
-  lg.setColor(cur_fg)
-  lg.draw(text,ax*units,ay*units)
+function print_text(text, x, y, anchor_x, anchor_y, scale)
+  if scale then
+    lg.push()
+    lg.scale(scale)
+    cur_x =     x/scale-(1-anchor_x)*text.w/2
+    cur_y =     y/scale-(1-anchor_y)*text.h/2
+  else
+    cur_x =     x-(1-anchor_x)*text.w/2
+    cur_y =     y-(1-anchor_y)*text.h/2
+  end
+
+  text:paste(cur_x*units,cur_y*units)
+
+  if scale then
+    lg.pop()
+    cur_x = cur_x*scale
+    cur_y = cur_y*scale
+  end
 end
 
 function api.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
   for i,s in api.ITEMS(strgs) do
     if (i==1) then
-      api.PRINT(s, x, y, anchor_x, anchor_y)
+      api.PRINT(s, x, y, anchor_x, anchor_y) --FIXME: assumes first line is longest
     else
       api.PRINT(s, nil, nil, 1, 0)
     end
@@ -222,28 +236,40 @@ function api.BLOCK(x, y, w, h)
   if not h then
     h=w
   end
+  lg.push("all")
+  lg.setShader()
   lg.setColor(cur_fg)
   lg.rectangle("fill",x*units,y*units,w*units,h*units)
+  lg.pop()
 end
 
 function api.BOX(x, y, w, h)
   if not h then
     h=w
   end
+  lg.push("all")
+  lg.setShader()
   lg.setColor(cur_fg)
   lg.rectangle("line",x*units,y*units,w*units,h*units)
+  lg.pop()
 end
 
 api.RECT = api.BOX
 
 function api.DISC(x, y, r)
+  lg.push("all")
+  lg.setShader()
   lg.setColor(cur_fg)
   lg.circle("fill",x*units,y*units,r*units)
+  lg.pop()
 end
 
 function api.RING(x, y, r)
+  lg.push("all")
+  lg.setShader()
   lg.setColor(cur_fg)
   lg.circle("line",x*units,y*units,r*units)
+  lg.pop()
 end
 
 api.CIRCLE = api.RING
@@ -254,41 +280,43 @@ end
 
 function api.EJECT()
   api.LOG("Eject")
-  cur_cart = get_cart("_carousel."..api.API)
-  cur_cart.__carts = carts -- carousel has secret access to this
-  cur_cart.__switch = switch_cart
-  cur_cart.__quit = love.event.quit
-  api.RESTART()
+  switch_cart("_carousel."..api.API, "Main", {
+    carts = carts,
+    switch_cart = switch_cart,
+    quit = love.event.quit
+  })
 end
 
 function api.ERROR(msg)
-  cur_cart = get_cart("_error."..api.API)
-  cur_cart.__msg = msg
-  cur_cart.__debug = cart_arg_found
-  cur_cart.__quit = love.event.quit
-  api.RESTART()
+  api.LOG("ERROR: ",msg)
+  switch_cart("_error."..api.API, "Main", {
+    msg=msg,
+    debug=cart_arg_found,
+    quit=love.event.quit
+  })
 end
 
 function api.RESET()
-  api.LOG("Resetting cart "..cur_cart.name)
-  cur_cart = get_cart(cur_cartid)
-  api.RESTART()
+  api.LOG("Resetting cart "..cur_cartid)
+  cur_cart = switch_cart(cur_cartid)
 end
 
 function api.RESTART()
-  api.LOG("Restarting cart "..cur_cart.name)
+  api.LOG("Restarting cart "..cur_cartid)
   api.T = 0
   if not cur_cart.START then
-    api.ERROR("?START")
+    api.LOG("No START function!")
+    api.ERROR("Bad cart")
     return
   end
   cur_cart:START()
 end
 
 function api.GO(mode)
-  api.LOG("Reloading cart as ",mode)
+  local id = (cur_cart and cur_cart.id) or cur_cartid
+  api.LOG("Reloading cart ",id," as ",mode)
   cur_modes = {}
-  cur_cart = get_cart(cur_cartid)
+  cur_cart = get_cart(id)
   cur_mode = cur_modes[mode.name]
   if not cur_mode then
     api.ERROR("?MODENAME")
@@ -443,8 +471,8 @@ function api.MAINMENU(modelist)
   for i=1,#modelist do
     m[#m+1] = { name=modelist[i].name, icon=modelist[i].icon, action=function() api.GO(modelist[i]) end }
   end
-  m[#m+1] = { name="RECORDS", icon="1f3c6", action=api.MEMORY }
-  m[#m+1] = { name="EJECT", icon="23cf", action=api.EJECT }
+  m[#m+1] = { name="Records", icon="1f3c6", action=api.MEMORY }
+  m[#m+1] = { name="Eject", icon="23cf", action=api.EJECT }
   return api.MENU(m)
 end
 
@@ -488,26 +516,27 @@ end
 
 -- Memory functions
 -- You can use POST to set as many fields as you like, for high scores and such.
--- but carts do not have access to these.
+-- but ordinary carts do not have access to these.
 -- Readable state is handled by SAVE and is subject to validation rules:
 
 function api.MEMORY()
   local cartid = cur_cartid
-  cur_cart = get_cart("_memory."..api.API)
-  cur_cart.__switch = switch_cart
-  cur_cart.__memory = memory[cartid]
-  cur_cart.__cart = carts[cartid]
-  api.RESTART()
+  switch_cart("_memory."..api.API, "Main", {
+    switch_cart = switch_cart,
+    memory = memory,
+    cart = carts[cartid]
+  })
 end
 
-function api.FIELD(loc,value,name,icon)
+function api.FIELD(loc,icon,name,desc,value)
   if not memory[cur_cartid] then memory[cur_cartid] = {} end
   if memory[cur_cartid][loc] then
     api.LOG("Retaining existing value ",memory[cur_cartid][loc].value," for ",name)
     memory[cur_cartid][loc].name=name
+    memory[cur_cartid][loc].desc=desc
     memory[cur_cartid][loc].icon=icon
   else
-    memory[cur_cartid][loc] = { value=value, name=name, icon=icon }
+    memory[cur_cartid][loc] = { value=value, name=name, desc=desc, icon=icon }
   end
   save_memory(cur_cartid)
   return loc
@@ -551,7 +580,11 @@ function api.POST(loc,value)
   end
   if not memory[cur_cartid] then memory[cur_cartid] = {} end
   if not memory[cur_cartid][loc] then memory[cur_cartid][loc] = {} end
-  memory[cur_cartid][loc].value = value
+  if type(value)=="function" then
+    memory[cur_cartid][loc].value = value(memory[cur_cartid][loc].value)
+  else
+    memory[cur_cartid][loc].value = value
+  end
   save_memory(cur_cartid)
 end
 

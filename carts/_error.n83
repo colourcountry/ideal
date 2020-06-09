@@ -1,19 +1,19 @@
 Cart = {
   name="_error",
   hidden=true,
-  api="n83"
+  api="n83",
 }
+
+Main = MODE("Main")
 
 function Cart:START()
   GO(Main)
 end
 
-Main = MODE("Main")
-
-function Main:UPDATE()
-  if Cart.__debug and Cart.__quit then
-    LOG("FATAL: ",Cart.__msg)
-    Cart.__quit()
+function Main:START(secrets)
+  if secrets then
+    quit = secrets.quit
+    msg = secrets.msg
   end
 end
 
@@ -21,10 +21,12 @@ function Main:DRAW()
   BORDER(8)
   CLS()
   COLOUR(0)
-  TITLE("CART ERROR", W/2, H/2, 0, 0)
+  TITLE("CART", W/2, H/2, 0, 0)
+  TITLE("ERROR", W/2, H/2+S, 0, 0)
   COLOUR(7)
-  PRINT(Cart.__msg, W/2, H/2+L*3, 0, 0)
-  PRINT(URL, W/2, H-L, 0, 0)
+  if msg then
+    PRINTLINES(SPLIT(msg, W/L, " "), W/2, H/2+S*3, 0, 0)
+  end
 end
 
 function Main:TOUCH(x,y,isNew)
@@ -34,13 +36,9 @@ function Main:TOUCH(x,y,isNew)
 end
 
 function Cart:SHUTDOWN()
-  if self.__quit then
-    self.__quit()
+  if quit then
+    quit()
   end
-end
-
-function Cart:START()
-  GO(Main)
 end
 
 return Cart

@@ -44,21 +44,14 @@ end
 
 function map:DRAW()
   if not self.canvas then return end
-  local tint_r = 1
-  local tint_g = 0
-  local tint_b = 0
-  if self.tint then
-    tint_r = colours[self.tint][1]
-    tint_g = colours[self.tint][2]
-    tint_b = colours[self.tint][3]
-  end
-  self.canvas.start()
+  local tint = colours[self.tint] or {1,0,0}
+  self.canvas:start()
   api.CLS()
   for e in self:ITEMS() do
     if api.IS(e,"tint") then -- FIXME: magic word
-      self.canvas.colour(tint_r,tint_g,tint_b)
+      self.canvas:colour(tint)
     else
-      self.canvas.colour(1,0,0)
+      self.canvas:colour({1,0,0})
     end
     draw_with_text(e,text_colour)
   end

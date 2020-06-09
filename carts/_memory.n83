@@ -4,39 +4,65 @@ Cart = {
   api="n83"
 }
 
-messages = {
-  title="RECORDS",
-}
-
-locs = {}
-
 Main = MODE("Main")
+
+function Main:START(secrets)
+  if secrets then
+    cart = secrets.cart
+    memory = secrets.memory
+    switch_cart = secrets.switch_cart
+  end
+
+  locs = {}
+  if memory and cart and memory[cart.id] then
+    for k,v in ITEMS(memory[cart.id]) do
+      locs[#locs+1] = k
+    end
+  end
+  SORT(locs)
+  LOG(cart.id,": found memory ",locs)
+end
 
 function Main:UPDATE()
 end
 
 function Main:DRAW()
-  BORDER(7)
-  COLOUR(0,7)
   CLS()
   COLOUR()
-  TITLE(UPPER(Cart.__cart.name), W/2, L*2, 0, 0)
-  COLOUR(0)
-  PRINT(UPPER(messages.title), W/2, L*4, 0, 0)
-  y = L*8
+  COLOUR(10)
+  BOX(10, S/2, W-20, S*2)
+  TITLE(cart.name, W/2, S, 0, 1)
+  y = S*5
   for i=1,#locs do
-    local item = Cart.__memory[locs[i]]
-    if item.icon then
-      SPR(item.icon,L+S/2,y)
+    if locs[i]=="__state__" then
+      SPR(0x1f4be,S,y)
+      PRINT("Saved",S*2,y,1,0)
+      y = y + S+L
+    else
+      local item = memory[cart.id][locs[i]]
+      if item.icon then
+        SPR(item.icon,L+S/2,y)
+      end
+      COLOUR(0)
+      PRINT(item.name,S*2,y,1,-1)
+      if item.desc and item.desc~="" then
+        local lines = SPLIT(STR(item.desc),(W-S*3)/L," ")
+        COLOUR(7)
+        PRINTLINES(lines,S*2,y+L,1,-1)
+        y = y + L*#lines
+      end
+      local lines = SPLIT(STR(item.value),(W-S*3)/L," ")
+      COLOUR(10)
+      PRINTLINES(lines,S*2,y+L,1,-1)
+      y = y + L*(#lines+2)
     end
-    PRINT(UPPER(item.name),S+L*2,y,-1,0)
-    PRINT(UPPER(STR(item.value)),W-L,y,1,0)
-    y = y + S
   end
 end
 
 function Main:RELEASE(ox,oy,x,y)
-  Cart.__switch(Cart.__cart.id)
+  if switch_cart and cart then
+    switch_cart(cart.id)
+  end
 end
 
 
@@ -46,13 +72,6 @@ end
 
 
 function Cart:START()
-  LOG("Starting Memory")
-  locs = {}
-  for k,v in ITEMS(self.__memory) do
-    locs[#locs+1] = k
-  end
-  SORT(locs)
-  LOG("Found ",#locs," locations")
   GO(Main)
 end
 

@@ -7,50 +7,39 @@ Cart = {
 DATA_LEAK_TEST = "leaking"
 
 messages = {
-  select="INSERT CARTRIDGE",
+  select="SELECT CARTRIDGE",
   no_carts="NO CARTRIDGES"
 }
 
-Splash = MODE("Splash for "..MODEL)
-
-function Splash:DRAW()
-  BORDER(0)
-  COLOUR(0,11)
-  CLS()
-  local letter = FLR(T/2)
-  if (letter>50) then
-    GO(Main)
-  end
-  for i=1, letter+1 do
-    COLOUR(i%11)
-    PRINT(MODEL,W/2,((-T)%(H*1.2))+i*L-H, 0, 0)
-  end
-  COLOUR(0)
-  TITLE(MODEL,W/2,H/2,0,0)
-end
-
-function Splash:TOUCH(x,y,isNew)
-  if (isNew) then
-    GO(Main)
-  end
-end
-
-
-
-
-
 Main = MODE("Main")
+
+function Main:START(secrets)
+  cartItems = {}
+  quit = secrets.quit
+  for k,v in ITEMS(secrets.carts) do
+    if not k:find("^_") then
+      cartItems[#cartItems+1] = {
+        id=k,
+        name=v.name,
+        icon=v.icon,
+        colour=5,
+        action=function() secrets.switch_cart(k) end
+      }
+    end
+  end
+  LOG("Found ",#cartItems," carts")
+  m = MENU(cartItems)
+  msg = messages.select
+end
 
 function Main:UPDATE()
   if (#cartItems==0) then
-    ERROR(messages.no_carts)
+    --ERROR(messages.no_carts)
     return
   end
 end
 
 function Main:DRAW()
-  BORDER(7)
-  COLOUR(0,7)
   CLS()
   DRAW(m)
   COLOUR()
@@ -71,35 +60,13 @@ function Main:RELEASE(ox,oy,x,y)
   m:handle_release(ox,oy,x,y)
 end
 
-
-
-
-
-
-
 function Cart:START()
-  LOG("Starting Carousel")
-  cartItems = {}
-  for k,v in ITEMS(self.__carts) do
-    if not k:find("^_") then
-      cartItems[#cartItems+1] = {
-        id=k,
-        name=v.name:upper(),
-        icon=v.icon,
-        colour=5,
-        action=function() self.__switch(k) end
-      }
-    end
-  end
-  LOG("Found ",#cartItems," carts")
-  m = MENU(cartItems)
-  msg = messages.select
-  GO(Splash)
+  --ERROR("Only system can run carousel")
 end
 
 function Cart:SHUTDOWN()
-  if self.__quit then
-    self.__quit()
+  if quit then
+    quit()
   end
 end
 

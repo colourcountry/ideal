@@ -1,18 +1,23 @@
+character = 0x1f994
+
 Cart = {
   name="Attic",
   info="an escape game",
-  api="n83"
+  api="n83",
+  icon=character,
 }
 
 Messages = {
   credit="DOIHEART 2020",
 }
 
+
 Empty = LOOP() -- convenience
 
 Splash = MODE("Splash")
 Menu = MODE("Main menu")
-Main = MODE("Game")
+Main = MODE("Play")
+Main.icon = character
 
 bg = 8
 msg = ""
@@ -140,8 +145,8 @@ end
 
 
 function Cart:START()
-  score = 0
-  flags = {}
+  FIELD("plays",character,"Plays","",0)
+  FIELD("hi",0x1f3c6,"High score","",0)
   GO(Menu)
 end
 
@@ -167,22 +172,23 @@ function Menu:DRAW()
   CLS()
   draw_scene()
   DRAW(mode_menu)
-  COLOUR(11)
-  BLOCK(10, H/4-2*L, W-20, 5*L)
-  COLOUR(-1)
-  TITLE(UPPER(Cart.name), W/2, H/4, 0, 0)
-  COLOUR(0)
-  PRINT(Messages.select_mode, W/2, H/4+2*L, 0, 0)
+  COLOUR()
+  BOX(10, H/4-2*L, W-20, 5*L)
+  COLOUR(10)
+  TITLE(Cart.name, W/2, H/4, 0, 0)
+  COLOUR(3)
+  PRINT(Messages.credit, W/2, H/4+2*L, 0, 0)
 end
 
 ------------------------------------------------------------------- main
 
 function Main:START()
   new_world()
-  score = 100
+  score = 0
   recoil = 0
   new_room(1,1)
-  player = map:set(3,3,"1f949")
+  player = map:set(3,3,character)
+  POST("plays",function(old) return old+1 end)
 end
 
 function draw_score()
@@ -212,19 +218,19 @@ function Main:UPDATE()
   map:UPDATE()
   if player.mx == 1 then
     new_room(world_x-1,world_y)
-    player = map:set(room_w-1,player.my,"1f949")
+    player = map:set(room_w-1,player.my,character)
   end
   if player.my == 1 then
     new_room(world_x,world_y-1)
-    player = map:set(player.mx,room_h-1,"1f949")
+    player = map:set(player.mx,room_h-1,character)
   end
   if player.mx == room_w then
     new_room(world_x+1, world_y)
-    player = map:set(2,player.my,"1f949")
+    player = map:set(2,player.my,character)
   end
   if player.my == room_h then
     new_room(world_x,world_y+1)
-    player = map:set(player.mx,2,"1f949")
+    player = map:set(player.mx,2,character)
   end
 end
 
@@ -238,6 +244,7 @@ function Main:DRAG(ox, oy, x, y)
 
   if IS(neighbour,"edible") then
     score = score + 10
+    POST("hi",function(old) return MAX(old,score) end)
   end
 
   map:move(player,dx,dy,5)
