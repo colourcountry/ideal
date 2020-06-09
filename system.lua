@@ -38,8 +38,8 @@ function add_quad_page(hex)
   for i=0,15 do
     for j=0,15 do
       local id=hex..string.format("%x%x",j,i)
-      quads[id] = lg.newQuad(i*tile_size,j*tile_size,tile_size,tile_size,img:getDimensions())
-      atlases[id] = img
+      quads[tonumber(id,16)] = lg.newQuad(i*tile_size,j*tile_size,tile_size,tile_size,img:getDimensions())
+      atlases[tonumber(id,16)] = img
     end
   end
 end

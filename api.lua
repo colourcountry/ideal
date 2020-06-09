@@ -120,26 +120,42 @@ end
 
 texts = {}
 
+function get_codepoint(utf8)
+  if #utf8>1 then return "?" end --FIXME
+  return string:byte(utf8)
+end
+
 function print_string(strg, x, y, anchor_x, anchor_y)
   if (not strg) then
     strg = "-"
   end
   strg = api.STR(strg):upper()
   if (not texts[strg]) then
-    texts[strg] = lg.newText(system_font, strg)
+    local codepoints = {}
+    for utf8 in str:gmatch("[\0-\x7F\xC2-\xF4][\x80-\xBF]*") do
+      codepoints[#codepoints] = get_codepoint(utf8)
+    end
+    local c = new_canvas(api.S*#codepoints,api.S)
+    c:start()
+    for i,cp in ipairs(codepoints) do
+      api.SPR(cp,i*api.S,0,1,0)
+    end
+    texts[strg] = c
   end
   print_text(texts[strg], x, y, anchor_x or 1, anchor_y or 1)
 end
 
 function api.SPR(spr, x, y)
-  lg.setColor(white)
   if sys.sprites.names[spr] then
     spr = sys.sprites.names[spr]
+  end
+  if type(spr)=="string" then
+    spr = tonumber(spr,16)
   end
   if quads[spr] then
     lg.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
   else
-    lg.draw(atlases["1f196"], quads["1f196"],(x-sprite_radius)*units,(y-sprite_radius)*units)
+    lg.draw(atlases[0x1f196], quads[0x1f196],(x-sprite_radius)*units,(y-sprite_radius)*units)
   end
 end
 
