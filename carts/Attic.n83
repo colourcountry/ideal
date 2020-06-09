@@ -90,15 +90,16 @@ function new_room(x,y)
   LOG("Entering room ",x,y,south or "X",east or "X",north or "X",west or "X")
 
   map = MAP({
-    ["brick wall left corner"]={"solid"},
-    ["brick wall face"]={"solid"},
-    ["brick wall right corner"]={"solid"},
+    ["brick wall left corner"]={"solid","tint"},
+    ["brick wall face"]={"solid","tint"},
+    ["brick wall right corner"]={"solid","tint"},
     ["border right"]={"solid"},
     ["border left"]={"solid"},
     [obj.spr]={"edible"}
   })
+  map:tint((x+y)%10+1)
 
-  for i=1,room_w-1 do
+  for i=2,room_w-1 do
     map:set(i,1,"brick wall face",10)
     map:set(i,room_h,"brick wall face",10)
   end

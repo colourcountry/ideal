@@ -11,7 +11,7 @@ messages = {
   no_carts="NO CARTRIDGES"
 }
 
-Splash = MODE({ name="Splash for "..MODEL })
+Splash = MODE("Splash for "..MODEL)
 
 function Splash:DRAW()
   BORDER(0)

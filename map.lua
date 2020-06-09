@@ -1,6 +1,6 @@
 map = {
-  cx = 8,
-  cy = 8,
+  cx = 0,
+  cy = 0,
   sx = 0,
   sy = 0,
   hx = nil,
@@ -8,7 +8,9 @@ map = {
   zx = nil,
   zy = nil,
   zw = nil,
-  zh = nil
+  zh = nil,
+  canvas = nil,
+  tint = nil
 }
 map.__index = map
 
@@ -40,10 +42,24 @@ function draw_with_text(e, text_colour)
   end
 end
 
-function map:DRAW(text_colour)
-  love.graphics.push()
-  love.graphics.translate(-self.cx*units,-self.cy*units)
+function map:DRAW()
+  if not self.canvas then return end
+  local tint_r = 1
+  local tint_g = 0
+  local tint_b = 0
+  if self.tint then
+    tint_r = colours[self.tint][1]
+    tint_g = colours[self.tint][2]
+    tint_b = colours[self.tint][3]
+  end
+  self.canvas.start()
+  api.CLS()
   for e in self:ITEMS() do
+    if api.IS(e,"tint") then -- FIXME: magic word
+      self.canvas.colour(tint_r,tint_g,tint_b)
+    else
+      self.canvas.colour(1,0,0)
+    end
     draw_with_text(e,text_colour)
   end
   if self.hx and self.hy then
@@ -60,7 +76,8 @@ function map:DRAW(text_colour)
     sys.api.COLOUR(5)
     sys.api.RECT(self.zx*S-8,self.zy*S-8,self.zw*S,self.zh*S)
   end
-  love.graphics.pop()
+  self.canvas.stop()
+  self.canvas.paste()
 end
 
 function map:UPDATE()
@@ -119,9 +136,11 @@ function map:set(mx,my,spr,c)
   end
   if mx > self.sx then
     self.sx = mx
+    self.canvas = sys.new_canvas(self.sx*api.S,self.sy*api.S)
   end
   if my > self.sy then
     self.sy = my
+    self.canvas = sys.new_canvas(self.sx*api.S,self.sy*api.S)
   end
   spr = sys.sprites.names[spr] or spr
   local e = sys.api.ENT(0,0,8,spr,c,self.flagsets[spr])
@@ -237,6 +256,10 @@ function map:move_and_repel(e)
   if c then
     e.y = e.y - c.dy
   end
+end
+
+function map:tint(c)
+  self.tint = c
 end
 
 return map

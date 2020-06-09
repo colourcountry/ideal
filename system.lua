@@ -4,7 +4,6 @@ lg = love.graphics
 --lg.setDefaultFilter("nearest")
 
 -- Various properties of the system.
-screenW,screenH = lg.getDimensions()
 units=4 --convert in-world units (144x240) to pre-scaling screen coords
 mode_panic_time = 600 -- if a mode is this old (in seconds) then it will automatically be restarted
 
@@ -58,33 +57,84 @@ end
 
 white = {1, 1, 1, 1}
 colours = {
-  {0.8, 1, 0.5, 1},
-  {0.5, 1, 0.5, 1},
-  {0.5, 1, 0.9, 1},
-  {0.5, 0.8, 1, 1},
-  {0.5, 0.5, 1, 1},
-  {0.8, 0.5, 1, 1},
-  {1, 0.5, 0.8, 1},
-  {1, 0.3, 0.5, 1},
-  {1, 0.6, 0.5, 1},
-  {1, 0.9, 0.5, 1},
+  {0.8, 1, 0, 1},
+  {0, 1, 0, 1},
+  {0, 1, 0.8, 1},
+  {0, 0.8, 1, 1},
+  {0, 0.3, 1, 1},
+  {0.5, 0, 1, 1},
+  {1, 0, 0.5, 1},
+  {1, 0.3, 0, 1},
+  {1, 0.6, 0, 1},
+  {1, 0.9, 0, 1},
   {0, 0, 0, 1}
 }
 colours[0] = white
 
 cur_fg = colours[0]
-cur_bg = colours[11]
+cur_bg = colours[11] -- TODO: remove
 cur_mode = "unset"
 cur_touches = {}
 mouse_touch_id = "MOUSE"
 twinkle = 0
 
-canvasW = api.W*units
-canvasH = api.H*units
-canvas = lg.newCanvas(canvasW,canvasH)
-scale = math.min((screenW-20)/canvasW , (screenH-20)/canvasH) -- Scale to the nearest integer
-translateX = (screenW-canvasW*scale)/2
-translateY = (screenH-canvasH*scale)/2
+shader_code = [[
+        extern mat4 transform;
+        extern vec4 bias;
+
+        vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
+        {
+                vec4 fragment_color = Texel(texture, texture_coords);
+                return fragment_color * transform + bias;
+        }
+]]
+
+function matrix_for_colour(r,g,b)
+  return {
+            {r, g, b, 0},
+            {b, r, g, 0},
+            {g, b, r, 0},
+            {0, 0, 0, 1},
+  }
+end
+
+function new_canvas(w, h)
+  if w==0 or h==0 then return end
+  local c = lg.newCanvas(w*units,h*units)
+  local s = lg.newShader(shader_code)
+  s:send("transform",matrix_for_colour(1,0,0))
+  s:send("bias",{0, 0, 0, 0})
+  return {
+    w=w,
+    h=h,
+    start=function()
+      lg.push("all")
+      lg.setShader(s)
+      lg.setCanvas(c)
+    end,
+    stop=function()
+      lg.pop()
+    end,
+    paste=function()
+      lg.draw(c,0,0)
+    end,
+    colour=function(r,g,b)
+      s:send("transform",matrix_for_colour(r,g,b))
+    end
+  }
+end
+
+canvas = new_canvas(api.W,api.H)
+
+function love.resize()
+  print("Resizing!")
+  screenW,screenH = lg.getDimensions()
+  print("Using screen dimensions ",screenW,"x",screenH)
+  scale = math.min((screenW-20)/(canvas.w*units) , (screenH-20)/(canvas.h*units))
+  translateX = (screenW-scale*canvas.w*units)/2
+  translateY = (screenH-scale*canvas.h*units)/2
+end
+love.resize()
 
 function drawTimers()
   local ut = update_time*screenH*60
@@ -130,19 +180,21 @@ end
 
 function love.draw()
   draw_time = love.timer.getTime()
-  lg.setFont(system_font)
-  lg.setColor(cur_fg)
-  lg.setCanvas(canvas)
   twinkle = 0
+  --lg.setColor(100,0,100)
+  --lg.circle("fill", screenW, screenH, api.T%screenH)
+  --lg.setColor(100,100,0)
+  --lg.circle("fill", 0, 0, api.T%screenH)
+  lg.setColor(255,255,255)
+  canvas:start()
   if cur_mode.DRAW then
     cur_mode:DRAW()
   end
-  lg.setCanvas() -- Set rendering to the screen
-	lg.push() -- Push transformation state, The translate and scale will affect everything below until lg.pop()
-	lg.translate( translateX, translateY ) -- Move to the appropiate top left corner
+  canvas:stop()
+	lg.push("all") -- Push transformation state, The translate and scale will affect everything below until lg.pop()
+	lg.translate( translateX, translateY ) -- Move to the appropriate top left corner
 	lg.scale(scale,scale) -- Scale
-  lg.setColor(white)
-	lg.draw(canvas,0,0) -- Draw the canvas
+  canvas:paste()
 	lg.pop() -- pop transformation state
   api.T = api.T + 1
   draw_time = love.timer.getTime() - draw_time
@@ -254,4 +306,5 @@ return {
   memory=memory,
   switch_cart=switch_cart,
   environment=environment,
+  new_canvas=new_canvas
 }
