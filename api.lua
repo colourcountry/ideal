@@ -103,17 +103,13 @@ function api.BORDER(c)
   lg.setBackgroundColor(f)
 end
 
-function api.COLOUR(fg, bg)
+function api.COLOUR(fg)
   fg = (fg and math.floor(fg)) or -1
-  bg = (bg and math.floor(bg)) or -1
   if colours[fg] then
     cur_fg = colours[fg]
   else
     cur_fg = colours[math.floor((api.T/5+twinkle)%11)]
     twinkle = twinkle + 1
-  end
-  if colours[bg] then
-    cur_bg = {colours[bg][1]/4, colours[bg][2]/4, colours[bg][3]/4, 1}
   end
   lg.setColor(cur_fg)
 end
@@ -275,7 +271,7 @@ end
 api.CIRCLE = api.RING
 
 function api.CLS()
-  lg.clear(cur_bg)
+  lg.clear()
 end
 
 function api.EJECT()

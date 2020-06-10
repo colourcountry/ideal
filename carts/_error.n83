@@ -23,7 +23,7 @@ function Main:DRAW()
   COLOUR(0)
   TITLE("CART", W/2, H/2, 0, 0)
   TITLE("ERROR", W/2, H/2+S, 0, 0)
-  COLOUR(7)
+  COLOUR(8)
   if msg then
     PRINTLINES(SPLIT(msg, W/L, " "), W/2, H/2+S*3, 0, 0)
   end

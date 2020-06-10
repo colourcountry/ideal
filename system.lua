@@ -9,10 +9,6 @@ mode_panic_time = 600 -- if a mode is this old (in seconds) then it will automat
 
 lg.setLineWidth(units)
 
-system_font=lg.newImageFont("nemo91font.png",
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- .,@")
-system_font_size=6
-
 sprite_size=16
 sprite_radius=sprite_size/2
 
@@ -55,24 +51,10 @@ for i=1,#quad_pages do
   add_quad_page(quad_pages[i])
 end
 
-white = {1, 1, 1, 1}
-colours = {
-  {0.8, 1, 0, 1},
-  {0, 1, 0, 1},
-  {0, 1, 0.8, 1},
-  {0, 0.8, 1, 1},
-  {0, 0.3, 1, 1},
-  {0.5, 0, 1, 1},
-  {1, 0, 0.5, 1},
-  {1, 0.3, 0, 1},
-  {1, 0.6, 0, 1},
-  {1, 0.9, 0, 1},
-  {0, 0, 0, 1}
-}
-colours[0] = white
+colours = require("colours")
+white = colours[0]
 
-cur_fg = colours[0]
-cur_bg = colours[11] -- TODO: remove
+cur_fg = white
 cur_mode = "unset"
 cur_touches = {}
 mouse_touch_id = "MOUSE"

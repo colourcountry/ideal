@@ -47,7 +47,7 @@ function Main:DRAW()
       PRINT(item.name,S*2,y,1,-1)
       if item.desc and item.desc~="" then
         local lines = SPLIT(STR(item.desc),(W-S*3)/L," ")
-        COLOUR(7)
+        COLOUR(6)
         PRINTLINES(lines,S*2,y+L,1,-1)
         y = y + L*#lines
       end

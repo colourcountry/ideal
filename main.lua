@@ -52,13 +52,8 @@ function love.load()
       new_cart = nil
       return "Bad cart"
     end
-    if sys.carts[cartid] and new_cart.name ~= sys.carts[cartid].name then
-      sys.api.LOG(path,": cart was named ",new_cart.name,", wanted ",sys.carts[cartid].name)
-      new_cart = nil
-      return "Bad cart"
-    end
     if new_cart.api ~= sys.api.API then
-      sys.api.LOG(path..": cart was for"..sys.carts[cartid].api..", wanted "..sys.api.API)
+      sys.api.LOG(path..": cart was for"..new_cart.api..", wanted "..sys.api.API)
       new_cart = nil
       return "Incompatible cart"
     end
