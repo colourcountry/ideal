@@ -26,7 +26,7 @@ player_speed = 3
 mob_speed = 0.5
 max_mobs = 10
 room_w = 9
-room_h = 13
+room_h = 9
 world_x = 0
 world_y = 0
 recoil = 0
@@ -192,24 +192,16 @@ function Main:START()
 end
 
 function draw_score()
-  COLOUR(11)
-  BLOCK(0,0,W,13)
+  COLOUR(8)
+  PRINT("score", W/4, 0, 0, 1)
+  PRINT("time", 3*W/4, 0, 0, 1)
   COLOUR(0)
-  PRINT("LIFE", W/4, 0, 0, -1)
-  PRINT(score, W/4, L, 0, -1)
-  draw_hiscore()
-end
-
-function draw_hiscore()
-  COLOUR(0)
-  PRINT("HI", 3*W/4, 0, 0, -1)
-  PRINT(hi, 3*W/4, L, 0, -1)
+  PRINT(score, W/4, L, 0, 1)
+  PRINT(TIMER(), 3*W/4, L, 0, 1)
 end
 
 function Main:DRAW()
-  BORDER(bg)
-  CLS(11)
-  COLOUR(0)
+  CLS()
   draw_scene()
   draw_score()
 end

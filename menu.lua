@@ -48,7 +48,8 @@ function menu:init()
       end
       self.items[i].x = (col-1)*dx
       self.items[i].y = y
-      self.items[i].lines = sys.api.SPLIT(self.items[i].name:upper(), dx-self.separation, true)
+      self.items[i].lines = sys.api.SPLIT(self.items[i].name, (dx-self.separation)/sys.api.L," ")
+      api.LOG(self.items[i].lines,self.items[i].name,dx-self.separation)
       local this_dy = #self.items[i].lines*sys.api.L + self.separation
       if self.items[i].icon then
         this_dy = this_dy + sys.api.S*2

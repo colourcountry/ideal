@@ -4,8 +4,8 @@ lg = love.graphics
 --lg.setDefaultFilter("nearest")
 
 -- Various properties of the system.
-units=4 --convert in-world units (144x240) to pre-scaling screen coords
-mode_panic_time = 600 -- if a mode is this old (in seconds) then it will automatically be restarted
+units=4 --resolution of sprite atlases, in pixels per IDEAL unit
+mode_panic_time = 999 -- if a mode is this old (in seconds) then it will automatically be restarted
 
 lg.setLineWidth(units)
 
@@ -26,7 +26,7 @@ memory={}
 cur_cart = nil
 cur_cartid = nil -- this is available during cart load
 cur_modes = {} -- register of modes defined in this cart
-mode_start_time = nil
+mode_end_time = nil
 
 function add_quad_page(hex)
   local tile_size = sprite_size * units
@@ -98,7 +98,7 @@ function new_canvas(w, h)
       lg.pop()
     end,
     paste=function(_,x,y)
-      lg.draw(c,x or 0,y or 0)
+      lg.draw(c,(x or 0)*units,(y or 0)*units)
     end,
     colour=function(_,cl)
       s:send("transform",matrix_for_colour(cl))
@@ -119,8 +119,10 @@ end
 love.resize()
 
 function drawTimers()
+  lg.setColor({1,0.5,0,1})
   local ut = update_time*screenH*60
-  lg.setColor({0,0,0,1})
+  lg.rectangle("fill",0,0,4,ut)
+  lg.setColor({0.6,0,0,1})
   local dt = draw_time*screenH*60
   lg.rectangle("fill",0,ut,4,dt)
 end
@@ -132,13 +134,13 @@ function switch_cart(cartid,mode,secrets)
   cur_cart = get_cart(cur_cartid)
   if cur_cart.loaded then
     if mode and cur_modes[mode] then
-      mode_start_time = false -- disable timer for special carts
+      mode_end_time = false -- disable timer for special carts
       cur_mode = cur_modes[mode]
       if cur_mode.START then
         cur_mode:START(secrets)
       end
     else
-      mode_start_time = love.timer.getTime()
+      mode_end_time = love.timer.getTime()+mode_panic_time
       api.RESTART() -- restart safely
     end
   else
@@ -148,8 +150,8 @@ end
 
 function love.update()
   update_time = love.timer.getTime()
-  if mode_start_time and mode_start_time+mode_panic_time<update_time then
-    api.LOG(update_time,": ",mode_panic_time," seconds elapsed since mode began, panic!")
+  if mode_end_time and mode_end_time<update_time then
+    api.LOG(update_time,": over ",mode_panic_time," seconds elapsed since mode began, panic!")
     api.RESET()
   end
   if (cur_mode.frame) then

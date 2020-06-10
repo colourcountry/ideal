@@ -69,8 +69,8 @@ function map:DRAW()
     sys.api.COLOUR(5)
     sys.api.RECT(self.zx*S-8,self.zy*S-8,self.zw*S,self.zh*S)
   end
-  self.canvas.stop()
-  self.canvas.paste()
+  self.canvas:stop()
+  self.canvas:paste(-self.cx,-self.cy)
 end
 
 function map:UPDATE()
@@ -129,11 +129,11 @@ function map:set(mx,my,spr,c)
   end
   if mx > self.sx then
     self.sx = mx
-    self.canvas = sys.new_canvas(self.sx*api.S,self.sy*api.S)
+    self.canvas = sys.new_canvas((self.sx+1)*S,(self.sy+1)*S)
   end
   if my > self.sy then
     self.sy = my
-    self.canvas = sys.new_canvas(self.sx*api.S,self.sy*api.S)
+    self.canvas = sys.new_canvas((self.sx+1)*S,(self.sy+1)*S)
   end
   spr = sys.sprites.names[spr] or spr
   local e = sys.api.ENT(0,0,8,spr,c,self.flagsets[spr])
@@ -224,8 +224,10 @@ function map:free(mx, my)
 end
 
 function map:centre(x,y)
-  self.cx = (self.sx*8)-x+8
-  self.cy = (self.sy*8)-y+8
+  local hs = S/2
+  self.cx = (self.sx+2)*hs-x-hs
+  self.cy = (self.sy+2)*hs-y-hs
+  api.LOG("Centred map on ",x,",",y," origin now ",self.cx,",",self.cy)
 end
 
 function map:collides(e)

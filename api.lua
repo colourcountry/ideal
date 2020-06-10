@@ -22,6 +22,7 @@ api = {
 
 cur_x = 0
 cur_y = 0
+timer_end_time = false
 
 function api.EXEC(chunk,chunkid)
    -- this is kind of horrible but works for the moment
@@ -189,7 +190,7 @@ function print_text(text, x, y, anchor_x, anchor_y, scale)
     cur_y =     y-(1-anchor_y)*text.h/2
   end
 
-  text:paste(cur_x*units,cur_y*units)
+  text:paste(cur_x,cur_y)
 
   if scale then
     lg.pop()
@@ -271,7 +272,7 @@ end
 api.CIRCLE = api.RING
 
 function api.CLS()
-  lg.clear()
+  lg.clear({0,0,0,1})
 end
 
 function api.EJECT()
@@ -319,7 +320,7 @@ function api.GO(mode)
     return
   end
   api.LOG("Entering",cur_mode)
-  mode_start_time = love.timer.getTime()
+  mode_end_time = love.timer.getTime()+mode_panic_time
   if cur_mode.START then
     cur_mode:START()
   end
@@ -592,6 +593,20 @@ function api.LOAD()
   local r = memory[cur_cartid] and memory[cur_cartid]["__state__"] and memory[cur_cartid]["__state__"].value
   api.LOG("Loaded state ",value)
   return r
+end
+
+function api.TIMER(s)
+  local now = love.timer.getTime()
+  if s then
+    timer_end_time = now+s
+  else
+    timer_end_time = false
+  end
+  if timer_end_time then
+    return math.ceil(timer_end_time-now)
+  else
+    return math.ceil(mode_end_time-now)
+  end
 end
 
 return api
