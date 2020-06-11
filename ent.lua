@@ -10,26 +10,33 @@ ent = {
 }
 ent.__index = ent
 
-local function is_on_screen(x, y, r)
+local function oob(x, y, r)
   if x<r or y<r or x>sys.api.W-r or y>sys.api.H-r then
-    return false
+    return true
   end
-  return true
+  return false
 end
 
-function ent:is_on_screen()
-  return is_on_screen(self.x, self.y, self.r)
+function ent:oob()
+  return oob(self.x, self.y, self.r)
+end
+
+function ent:moveto(x,y,frames)
+  self.x = x -- FIXME: implement frames here, not in map
+  self.y = y
+  return self
 end
 
 function ent:move()
   self.x = self.x + self.dx
   self.y = self.y + self.dy
-  return
+  return self
 end
 
 function ent:stop()
   self.dx = 0
   self.dy = 0
+  return self
 end
 
 function ent:collides(other,xoff,yoff)

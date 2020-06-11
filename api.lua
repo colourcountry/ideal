@@ -383,7 +383,10 @@ function api.SHUFFLE(array)
 end
 
 function api.CHOOSE(array)
-  return array[math.random(1,#array)]
+  if type(array)=="table" then
+    return array[math.random(1,#array)]
+  end
+  return array -- assume a single value
 end
 
 -------------------------------------------------------------------- Object "methods"
@@ -414,6 +417,12 @@ end
 entid = 1
 function api.ENT(x, y, r, spr, c, flags)
   local ent = require("ent")
+
+  if not flags then flags={} end
+  -- add the original sprite and its name to flags,
+  -- so we can tell what it was even if its sprite is changed
+  flags[spr] = true
+
   local o = {
     x=x,
     y=y,
@@ -429,7 +438,9 @@ function api.ENT(x, y, r, spr, c, flags)
 end
 
 function api.IS(e,k)
-  return e and e.flags and e.flags[k]
+  if not e or not e.flags then return false end
+  if e.flags[k] then return true end
+  return sys.sprites.names[k] and e.flags[sys.sprites.names[k]]
 end
 
 function api.LOOP()
@@ -567,7 +578,7 @@ function api.DRAWFIELD(loc,y)
   return draw_field(memory[cur_cartid][loc],y)
 end
 
-function api.FIELD(loc,icon,name,desc,value)
+function api.FIELD(loc,icon,name,desc,rule,init_value)
   if not memory[cur_cartid] then memory[cur_cartid] = {} end
   if memory[cur_cartid][loc] then
     api.LOG("Retaining existing value ",memory[cur_cartid][loc].value," for ",name)
@@ -575,7 +586,7 @@ function api.FIELD(loc,icon,name,desc,value)
     memory[cur_cartid][loc].desc=desc
     memory[cur_cartid][loc].icon=icon
   else
-    memory[cur_cartid][loc] = { value=value, name=name, desc=desc, icon=icon }
+    memory[cur_cartid][loc] = { rule=rule, value=init_value, name=name, desc=desc, icon=icon }
   end
   save_memory(cur_cartid)
   return loc
@@ -610,20 +621,31 @@ function validate_state(v)
   return s
 end
 
+postrules = { -- FIXME: nicer way to specify the rule?
+  function(old,new) return new end,
+  function(old,new) return old+new end,
+  function(old,new) return math.max(old,new) end,
+  function(old,new) return math.min(old,new) end,
+}
+
 function api.POST(loc,value)
+  api.LOG("POST",loc,value)
   if loc==0 then
     safe_value = validate_state(value)
-    api.LOG("Requested save state ",value)
-    api.LOG("Actually saved state ",safe_value)
-    value = safe_value
+    if not memory[cur_cartid] then memory[cur_cartid] = {} end
+    memory[cur_cartid][0] = safe_value
+    api.LOG("...memory now",memory[cur_cartid])
+    return
   end
-  if not memory[cur_cartid] then ERROR("POST to undefined field "..loc) end
-  if not memory[cur_cartid][loc] then ERROR("POST to undefined field "..loc) end
-  if type(value)=="function" then
-    memory[cur_cartid][loc].value = value(memory[cur_cartid][loc].value)
-  else
-    memory[cur_cartid][loc].value = value
+  if not memory[cur_cartid] then api.ERROR("POST to undefined cart "..cur_cartid) return end
+  if not memory[cur_cartid][loc] then
+    api.LOG("...memory was",memory[cur_cartid])
+    api.ERROR("POST to undefined field "..loc)
+    return
   end
+  local rule = postrules[memory[cur_cartid][loc].rule or 1]
+  memory[cur_cartid][loc].value = rule(memory[cur_cartid][loc].value,value)
+  api.LOG("...memory now",memory[cur_cartid])
   save_memory(cur_cartid)
 end
 
@@ -634,7 +656,7 @@ end
 function api.LOAD()
   local r = memory[cur_cartid] and memory[cur_cartid][0] and memory[cur_cartid][0].value
   api.LOG("Loaded state ",value)
-  return r
+  return r or {}
 end
 
 function api.TIMER(s)

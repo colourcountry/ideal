@@ -189,6 +189,10 @@ function map:coord(x,y)
   return math.floor((x+8+self.cx)/S), math.floor((y+8+self.cy)/S)
 end
 
+function map:under(e) -- given a free entity, what map entity is at the same place
+  return self:get(self:coord(e.x,e.y))
+end
+
 function map:highlight(mx,my)
   if mx and my then
     if mx>0 and my>0 and mx<=self.sx and my<=self.sy then
@@ -214,13 +218,13 @@ function map:grab(e,if_empty,in_zone)
   return self:set_entity(mx,my,e)
 end
 
-function map:free(mx, my)
-  local e = self:get(mx,my)
-  self:remove(mx,my)
+function map:free(e)
+  self:remove(e.x/S,e.y/S)
   if e then
     e.x = e.x - self.cx
     e.y = e.y - self.cy
   end
+  api.LOG("Freed",e,"from",mx,my)
   return e
 end
 

@@ -1,0 +1,267 @@
+Reg = {  stop=0x100000, down=0x100002, right=0x100004, left=0x100006, up=0x100008 }
+
+Cart = {
+  name="Archer",
+  info="a puzzle game",
+  api="n83",
+  icon=Reg.stop,
+}
+
+legend = {
+  ["b"]="bomb",
+  ["m"]="japanese ogre",
+  ["<"]=0x1f880,
+  ["^"]=0x1f881,
+  [">"]=0x1f882,
+  ["v"]=0x1f883,
+  ["o"]=SPRGROUP("food-fruit"),
+  ["@"]=Reg.stop
+}
+
+plans = {
+  {
+    ">>   v",
+    "@  mbv",
+    "^ o   ",
+    "^   <<",
+  }
+}
+
+shoot_speed = 3
+
+function new_level(i)
+  local plan = plans[i]
+  if not plan then ERROR("no such level "..STR(i)) return end
+
+  local h = #plan
+  local w = #plan[1]
+  local player = nil
+  local fruit = CHOOSE(legend["o"])
+
+  map = MAP({
+    ["brick wall left corner"]={"tint"},
+    ["brick wall face"]={"tint"},
+    ["brick wall right corner"]={"tint"},
+    ["japanese ogre"]={"tint"},
+    [0x1f880]={"arrow"},
+    [0x1f881]={"arrow"},
+    [0x1f882]={"arrow"},
+    [0x1f883]={"arrow"},
+    [fruit]={"edible"}
+  })
+  map:tint(i%10+1)
+
+  for i=1,w do
+    for j=1,h do
+      local here = CHARAT(plan[j],i)
+      local p = nil
+      if here=="o" then
+        p = fruit
+      else
+        p = legend[here]
+      end
+
+      if p then
+        local e = map:set(i+1,j+1,p,10)
+        if here=="@" then
+          player = e
+        end
+      end
+    end
+    map:set(i+1,1,"brick wall face",10)
+    map:set(i+1,h+2,"brick wall face",10)
+  end
+
+  for j=1,h+2 do
+    map:set(1,j,"border right",10)
+    map:set(w+2,j,"border left",10)
+  end
+  map:centre(W/2,H/2)
+
+  return player
+end
+
+function draw_scene()
+  DRAW(map)
+end
+
+
+function Cart:START()
+  FIELD(1,Reg.stop,"Plays","",2,0)
+  FIELD(2,0x1f3c6,"High score","",3,0)
+  FIELD(3,nil,"How to play","Collect arrows and explode the ogre")
+  FIELD(4,nil,"Credits","IDEALsoft 19828")
+  FIELD(5,nil,"Inspired by","C64 Saracen")
+  GO(Menu)
+end
+
+------------------------------------------------------------------- menu
+
+Menu = MODE("Main menu")
+
+-- standard menu functions
+function Menu:START() mode_menu = MAINMENU({Main}) end
+function Menu:TOUCH(x, y) mode_menu:handle_touch(x, y) end
+function Menu:DRAG(ox, oy, x, y) mode_menu:handle_drag(ox, oy, x, y) end
+function Menu:RELEASE(ox, oy, x, y) mode_menu:handle_release(ox, oy, x, y) end
+
+function Menu:DRAW()
+  CLS()
+  DRAW(mode_menu)
+  COLOUR(5)
+  BLOCK(L, L, W-2*L, 4*L)
+  COLOUR()
+  BOX(L, L, W-2*L, 4*L)
+  COLOUR(10)
+  TITLE(Cart.name, W/2, 3*L, 0, 0)
+  DRAWFIELD(2,S+6*L)
+end
+
+------------------------------------------------------------------- main
+
+Main = MODE("Play")
+Main.icon = "japanese ogre"
+
+function wigwag() return FLR(T/8)%2 end
+
+function Main:START()
+  local state = LOAD()
+  cur_level = state[1] or 1
+  cur_score = state[2] or 0
+  player = new_level(cur_level)
+  TIMER(60)
+end
+
+function draw_state()
+  COLOUR(0)
+  PRINT(cur_score, W/4, L, 0, 0)
+  PRINT(TIMER(), 3*W/4, L, 0, 0)
+  if player_carrying then
+    player_carrying:DRAW()
+  end
+  if player_shooting then
+    player_shooting:DRAW()
+  end
+end
+
+function Main:DRAW()
+  CLS()
+  draw_scene()
+  draw_state()
+end
+
+function Main:UPDATE()
+  map:UPDATE()
+  if player_shooting then
+    player_shooting:move()
+    if player_shooting:oob() then
+      player_shooting = nil
+      return
+    end
+    local here = map:under(player_shooting)
+    if here then
+      if here==player then return end
+      LOG(here)
+      if IS(here,"japanese ogre") then
+        cur_score = cur_score + 100
+        SAVE({cur_level, cur_score})
+        GO(Over)
+      end
+      player_shooting = nil
+    end
+  end
+end
+
+function shoot(e)
+  player_shooting = player_carrying:moveto(player.x-map.cx,player.y-map.cy)
+  cur_score = cur_score - 10
+  player_carrying = nil
+  if player_shooting.spr == 0x1f880 then player_shooting.dx = -shoot_speed return end
+  if player_shooting.spr == 0x1f881 then player_shooting.dy = -shoot_speed return end
+  if player_shooting.spr == 0x1f882 then player_shooting.dx = shoot_speed return end
+  if player_shooting.spr == 0x1f883 then player_shooting.dy = shoot_speed return end
+end
+
+function Main:DRAG(ox, oy, x, y)
+  if player_carrying then
+    if ABS(ox-player_carrying.x)<S and ABS(oy-player_carrying.y)<S then
+      shoot(player_carrying)
+      player.busy = true -- don't move until release
+    end
+  end
+
+  if player.moving or player.busy then return end
+
+  local mx,my = map:coord(x,y)
+  local dx,dy = QUADRANT(mx-player.mx,my-player.my)
+
+  local neighbour = map:get(player.mx+dx,player.my+dy)
+
+  if not neighbour then
+    move(dx,dy)
+    return
+  end
+
+  if IS(neighbour,"edible") then
+    cur_score = cur_score + 10
+    move(dx,dy)
+    return
+  end
+
+  if IS(neighbour,"arrow") and not player_carrying then
+    map:free(neighbour):moveto(W/2,H-S,10)
+    player_carrying = neighbour
+    LOG(player_carrying)
+    move(dx,dy)
+    return
+  end
+
+  player.spr=Reg.stop -- solid
+end
+
+function move(dx,dy)
+  map:move(player,dx,dy,10)
+  ANIMATE(player,wigwag)
+  if dx<0 then player.spr=Reg.left return end
+  if dx>0 then player.spr=Reg.right return
+  end
+  if dy<0 then player.spr=Reg.up return end
+  if dy>0 then player.spr=Reg.down return end
+  player.spr=Reg.stop
+end
+
+function Main:RELEASE(x, y)
+  player:stop()
+  player.spr = Reg.stop
+  player.busy = false
+end
+
+------------------------------------------------------------------- game over
+
+Over = MODE("Game over")
+
+function Over:START()
+  local state = LOAD()
+  cur_level = state[1] or 1
+  cur_score = state[2] or 0
+  POST(1,1)
+  POST(2,cur_score)
+end
+
+function Over:DRAW()
+  BORDER(8)
+  CLS()
+  COLOUR(0)
+  TITLE("GAME", W/2, H/2, 0, 0)
+  TITLE("OVER", W/2, H/2+S, 0, 0)
+  COLOUR(8)
+  PRINT("Level "..cur_score, W/2, H/2+S*3, 0, 0)
+  PRINT("Score "..cur_level, W/2, H/2+S*4, 0, 0)
+  DRAWFIELD(2,H-S*2)
+end
+
+function Over:TOUCH(x,y)
+  RESTART()
+end
+
+return Cart

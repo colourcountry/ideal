@@ -13,6 +13,8 @@ Sprite assignments
 return {
 	names = {
 		-- emoji
+		["bomb"]                  =0x01f4a3,
+		["japanese ogre"]         =0x01f479,
 		-- food-fruit
 		["grapes"]								=0x01f347,
 		["melon"]									=0x01f348,
