@@ -5,6 +5,7 @@ ent = {
     dx=0,
     dy=0,
     spr="@",
+    anim=nil,
     c=nil
 }
 ent.__index = ent
@@ -38,11 +39,19 @@ function ent:collides(other,xoff,yoff)
   end
 end
 
+function ent:ANIMATE(f)
+  self.anim = f
+end
+
 function ent:DRAW()
   if self.c then
     sys.api.COLOUR(self.c)
   end
-  sys.api.SPR(self.spr, self.x, self.y)
+  if self.anim then
+    sys.api.SPR(self.spr+self.anim(), self.x, self.y)
+  else
+    sys.api.SPR(self.spr, self.x, self.y)
+  end
 end
 
 ent.draw = ent.DRAW

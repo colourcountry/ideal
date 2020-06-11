@@ -9,18 +9,11 @@ Main = MODE("Main")
 function Main:START(secrets)
   if secrets then
     cart = secrets.cart
-    memory = secrets.memory
+    memory = secrets.memory[cart.id]
     switch_cart = secrets.switch_cart
+    draw_field = secrets.draw_field
   end
-
-  locs = {}
-  if memory and cart and memory[cart.id] then
-    for k,v in ITEMS(memory[cart.id]) do
-      locs[#locs+1] = k
-    end
-  end
-  SORT(locs)
-  LOG(cart.id,": found memory ",locs)
+  LOG(cart.id,": found memory ",memory)
 end
 
 function Main:UPDATE()
@@ -29,33 +22,12 @@ end
 function Main:DRAW()
   CLS()
   COLOUR()
+  BOX(L, L, W-2*L, 4*L)
   COLOUR(10)
-  BOX(10, S/2, W-20, S*2)
-  TITLE(cart.name, W/2, S, 0, 1)
-  y = S*5
-  for i=1,#locs do
-    if locs[i]=="__state__" then
-      SPR(0x1f4be,S,y)
-      PRINT("Saved",S*2,y,1,0)
-      y = y + S+L
-    else
-      local item = memory[cart.id][locs[i]]
-      if item.icon then
-        SPR(item.icon,L+S/2,y)
-      end
-      COLOUR(0)
-      PRINT(item.name,S*2,y,1,-1)
-      if item.desc and item.desc~="" then
-        local lines = SPLIT(STR(item.desc),(W-S*3)/L," ")
-        COLOUR(6)
-        PRINTLINES(lines,S*2,y+L,1,-1)
-        y = y + L*#lines
-      end
-      local lines = SPLIT(STR(item.value),(W-S*3)/L," ")
-      COLOUR(10)
-      PRINTLINES(lines,S*2,y+L,1,-1)
-      y = y + L*(#lines+2)
-    end
+  TITLE(cart.name, W/2, 3*L, 0, 0)
+  y = S*4
+  for i=1,#memory do
+    y = y + draw_field(memory[i],y,true) + L
   end
 end
 
@@ -64,12 +36,6 @@ function Main:RELEASE(ox,oy,x,y)
     switch_cart(cart.id)
   end
 end
-
-
-
-
-
-
 
 function Cart:START()
   GO(Main)

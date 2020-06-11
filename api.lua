@@ -17,7 +17,7 @@ api = {
   UPPER=string.upper,
   LOWER=string.lower,
   MID=string.sub,
-  SORT=table.sort
+  SORT=table.sort,
 }
 
 cur_x = 0
@@ -389,16 +389,26 @@ end
 -------------------------------------------------------------------- Object "methods"
 -- To make it a bit more BASICy, these global functions just call named methods of the object
 
-function api.DRAW(drawable)
-  if not drawable then return end
-  if drawable.DRAW then
-    drawable:DRAW()
+function api.DRAW(o)
+  if not o then return end
+  if o.DRAW then
+    o:DRAW()
   else
-    api.LOG("ERROR: Can't draw object ",drawable)
-    die()
-    api.ERROR("?DRAW")
+    api.LOG("ERROR: Can't draw object ",o)
+    api.ERROR("Can't draw this")
   end
 end
+
+function api.ANIMATE(o,f)
+  if not o then return end
+  if o.DRAW then
+    o:ANIMATE(f)
+  else
+    api.LOG("ERROR: Can't draw object ",o)
+    api.ERROR("Can't draw this")
+  end
+end
+
 -------------------------------------------------------------------- Object types
 
 entid = 1
@@ -468,8 +478,8 @@ function api.MAINMENU(modelist)
   for i=1,#modelist do
     m[#m+1] = { name=modelist[i].name, icon=modelist[i].icon, action=function() api.GO(modelist[i]) end }
   end
-  m[#m+1] = { name="Records", icon="1f3c6", action=api.MEMORY }
-  m[#m+1] = { name="Eject", icon="23cf", action=api.EJECT }
+  m[#m+1] = { name="Info", icon=105, action=api.MEMORY }
+  m[#m+1] = { name="Eject", icon=0x23cf, action=api.EJECT }
   return api.MENU(m)
 end
 
@@ -520,9 +530,41 @@ function api.MEMORY()
   local cartid = cur_cartid
   switch_cart("_memory."..api.API, "Main", {
     switch_cart = switch_cart,
+    draw_field = draw_field,
     memory = memory,
     cart = carts[cartid]
   })
+end
+
+function draw_field(item,y,include_desc)
+  local margin = api.L
+  local text_indent = api.S+api.L
+  local text_width = api.W-text_indent-margin*2
+  local oy = y
+  if item.icon then
+    api.SPR(item.icon,margin+api.S/2,y)
+  end
+  api.COLOUR(0)
+  api.PRINT(item.name,margin+text_indent,y,1,-1)
+  if include_desc and item.desc and item.desc~="" then
+    local lines = api.SPLIT(api.STR(item.desc),text_width/api.L," ")
+    api.COLOUR(8)
+    api.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
+    y = y + api.L*#lines
+  end
+  if item.value then
+    local lines = api.SPLIT(api.STR(item.value),text_width/api.L," ")
+    api.COLOUR(10)
+    api.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
+    y = y + api.L*#lines
+  end
+  return y - oy + api.L
+end
+
+function api.DRAWFIELD(loc,y)
+  if not memory[cur_cartid] then return y end
+  if not memory[cur_cartid][loc] then return y end
+  return draw_field(memory[cur_cartid][loc],y)
 end
 
 function api.FIELD(loc,icon,name,desc,value)
@@ -569,14 +611,14 @@ function validate_state(v)
 end
 
 function api.POST(loc,value)
-  if loc=="__state__" then
+  if loc==0 then
     safe_value = validate_state(value)
     api.LOG("Requested save state ",value)
     api.LOG("Actually saved state ",safe_value)
     value = safe_value
   end
-  if not memory[cur_cartid] then memory[cur_cartid] = {} end
-  if not memory[cur_cartid][loc] then memory[cur_cartid][loc] = {} end
+  if not memory[cur_cartid] then ERROR("POST to undefined field "..loc) end
+  if not memory[cur_cartid][loc] then ERROR("POST to undefined field "..loc) end
   if type(value)=="function" then
     memory[cur_cartid][loc].value = value(memory[cur_cartid][loc].value)
   else
@@ -586,11 +628,11 @@ function api.POST(loc,value)
 end
 
 function api.SAVE(state)
-  api.POST("__state__",state)
+  api.POST(0,state)
 end
 
 function api.LOAD()
-  local r = memory[cur_cartid] and memory[cur_cartid]["__state__"] and memory[cur_cartid]["__state__"].value
+  local r = memory[cur_cartid] and memory[cur_cartid][0] and memory[cur_cartid][0].value
   api.LOG("Loaded state ",value)
   return r
 end

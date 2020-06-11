@@ -1,10 +1,16 @@
-character = 0x1f994
+character = {
+  stop=0x100000,
+  down=0x100002,
+  right=0x100004,
+  left=0x100006,
+  up=0x100008,
+}
 
 Cart = {
   name="Attic",
   info="an escape game",
   api="n83",
-  icon=character,
+  icon=character.stop,
 }
 
 Messages = {
@@ -17,7 +23,7 @@ Empty = LOOP() -- convenience
 Splash = MODE("Splash")
 Menu = MODE("Main menu")
 Main = MODE("Play")
-Main.icon = character
+Main.icon = character.stop
 
 bg = 8
 msg = ""
@@ -145,8 +151,10 @@ end
 
 
 function Cart:START()
-  FIELD("plays",character,"Plays","",0)
-  FIELD("hi",0x1f3c6,"High score","",0)
+  FIELD(1,character,"Plays","",0)
+  FIELD(2,0x1f3c6,"High score","",0)
+  FIELD(3,nil,"How to play","Explore the dungeon and collect all the fruit. Clear rooms to open doors!")
+  FIELD(4,nil,"Credits","IDEALsoft 19828")
   GO(Menu)
 end
 
@@ -170,25 +178,27 @@ end
 
 function Menu:DRAW()
   CLS()
-  draw_scene()
   DRAW(mode_menu)
+  COLOUR(5)
+  BLOCK(L, L, W-2*L, 4*L)
   COLOUR()
-  BOX(10, H/4-2*L, W-20, 5*L)
+  BOX(L, L, W-2*L, 4*L)
   COLOUR(10)
-  TITLE(Cart.name, W/2, H/4, 0, 0)
-  COLOUR(3)
-  PRINT(Messages.credit, W/2, H/4+2*L, 0, 0)
+  TITLE(Cart.name, W/2, 3*L, 0, 0)
+  DRAWFIELD(2,S+6*L)
 end
 
 ------------------------------------------------------------------- main
+
+function wigwag() return FLR(T/8)%2 end
 
 function Main:START()
   new_world()
   score = 0
   recoil = 0
   new_room(1,1)
-  player = map:set(3,3,character)
-  POST("plays",function(old) return old+1 end)
+  player = map:set(3,3,character.stop)
+  POST(1,function(old) return old+1 end)
 end
 
 function draw_score()
@@ -210,40 +220,51 @@ function Main:UPDATE()
   map:UPDATE()
   if player.mx == 1 then
     new_room(world_x-1,world_y)
-    player = map:set(room_w-1,player.my,character)
+    player = map:set(room_w-1,player.my,character.stop)
   end
   if player.my == 1 then
     new_room(world_x,world_y-1)
-    player = map:set(player.mx,room_h-1,character)
+    player = map:set(player.mx,room_h-1,character.stop)
   end
   if player.mx == room_w then
     new_room(world_x+1, world_y)
-    player = map:set(2,player.my,character)
+    player = map:set(2,player.my,character.stop)
   end
   if player.my == room_h then
     new_room(world_x,world_y+1)
-    player = map:set(player.mx,2,character)
+    player = map:set(player.mx,2,character.stop)
   end
 end
 
 function Main:DRAG(ox, oy, x, y)
-  if player.goal_t then return end
+  if player.moving then return end
   local mx,my = map:coord(x,y)
   local dx,dy = QUADRANT(mx-player.mx,my-player.my)
 
   local neighbour = map:get(player.mx+dx,player.my+dy)
-  if IS(neighbour,"solid") then return end
+  if IS(neighbour,"solid") then
+    player.spr=character.down
+    return
+  end
 
   if IS(neighbour,"edible") then
     score = score + 10
-    POST("hi",function(old) return MAX(old,score) end)
+    POST(2,function(old) return MAX(old,score) end)
   end
 
-  map:move(player,dx,dy,5)
+  map:move(player,dx,dy,10)
+  ANIMATE(player,wigwag)
+  if dx<0 then player.spr=character.left return end
+  if dx>0 then player.spr=character.right return
+  end
+  if dy<0 then player.spr=character.up return end
+  if dy>0 then player.spr=character.down return end
+  player.spr=character.stop
 end
 
 function Main:RELEASE(x, y)
   player:stop()
+  player.spr=character.stop
 end
 
 return Cart

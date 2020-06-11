@@ -28,9 +28,10 @@ cur_cartid = nil -- this is available during cart load
 cur_modes = {} -- register of modes defined in this cart
 mode_end_time = nil
 
-function add_quad_page(hex)
+function add_quad_page(filename, hex)
   local tile_size = sprite_size * units
-  local img = lg.newImage("atlas/"..hex..".png")
+  local img = lg.newImage(filename)
+  print("Loading quad-page "..hex.." from "..filename)
   for i=0,15 do
     for j=0,15 do
       local id=hex..string.format("%x%x",j,i)
@@ -40,15 +41,12 @@ function add_quad_page(hex)
   end
 end
 
-quad_pages = { "00", -- Basic font
-               "1f1", "1f2", "1f3", "1f4", "1f5", "1f6",
-               "1f7", "1f9", "1fa", "20", "21", "22", "23", "24",
-               "26", "27", "29", "2b", -- emoji and symbols from Google
-               "25", -- Border box characters
-               "f00" -- (PUA) Wall tiles
-             }
-for i=1,#quad_pages do
-  add_quad_page(quad_pages[i])
+local files = love.filesystem.getDirectoryItems("atlas/")
+for k, file in ipairs(files) do
+  local hex = file:match("([0-9a-f]+)[.]png")
+  if hex then
+	   add_quad_page("atlas/"..file, hex)
+   end
 end
 
 colours = require("colours")

@@ -75,17 +75,17 @@ end
 
 function map:UPDATE()
   for e in self:ITEMS() do
-    if e.goal_t then
-      if e.goal_t<=0 then
+    if e.moving then
+      if e.moving<=0 then
         if self:get(e.mx,e.my).id == e.id then
           self:unset(e.mx,e.my)
         end
         self:set_entity(e.goal_mx,e.goal_my,e)
-        e.goal_t = nil
+        e.moving = nil
       else
-        e.x = e.x + (e.goal_mx*S-e.x)/e.goal_t
-        e.y = e.y + (e.goal_my*S-e.y)/e.goal_t
-        e.goal_t = e.goal_t-1
+        e.x = e.x + (e.goal_mx*S-e.x)/e.moving
+        e.y = e.y + (e.goal_my*S-e.y)/e.moving
+        e.moving = e.moving-1
       end
     end
   end
@@ -147,8 +147,9 @@ function map:move(e,dx,dy,t)
   if not e.mx then
     self:grab(e)
   end
-  if self:oob(e.mx+dx,e.my+dy) then
-    return --can't move off the map, extend with map:set first
+  if self:oob(
+  e.mx+dx,e.my+dy) then
+    return -- can't move off the map, extend with map:set first
   end
   if not t or t==0 then
     self:set_entity(e.mx+dx,e.my+dy,e)
@@ -156,7 +157,7 @@ function map:move(e,dx,dy,t)
   end
   e.goal_mx = e.mx+dx
   e.goal_my = e.my+dy
-  e.goal_t = t
+  e.moving = t -- = number of frames left to move
 end
 
 function map:fromLines(lines,c)

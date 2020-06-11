@@ -1,40 +1,54 @@
+--[[
+Sprite assignments
+==================
+
+0x000000 - 0x0effff - Standard Unicode
+0x0f0000 - 0x0fffff - PUA A - IDEAL static sprites
+0x100000 - 0x101fff - PUA B - IDEAL sprites, 2-frame animations
+0x102000 - 0x107fff - PUA B - IDEAL sprites, 4-frame animations
+0x108000 - 0x10ffff - PUA B - IDEAL sprites, 8-frame animations
+
+--]]
+
 return {
 	names = {
 		-- emoji
 		-- food-fruit
-		["grapes"]								="1f347",
-		["melon"]									="1f348",
-		["watermelon"]						="1f349",
-		["tangerine"]							="1f34a",
-		["lemon"]									="1f34b",
-		["banana"]								="1f34c",
-		["pineapple"]							="1f34d",
-		["mango"]								  ="1f96d",
-		["red apple"]							="1f34e",
-		["green apple"]						="1f34f",
-		["pear"]									="1f350",
-		["peach"]									="1f351",
-		["cherries"]							="1f352",
-		["strawberry"]						="1f353",
-		["blueberries"]						="1fad0",
-		["kiwi fruit"]						="1f95d",
-		["tomato"]								="1f345",
-		["olive"]									="1fad2",
-		["coconut"]								="1f965",
-		["brick"]									="1f9f1",
-		-- PUA 00 wall tiles
-		["border bottom right"]		="f0000",
-		["border bottom"]					="f0001",
-		["border bottom left"]		="f0002",
-		["brick wall left corner"] 	="f0006",
-		["brick wall face"]					="f0007",
-		["brick wall right corner"]	="f0008",
-	  ["border right"]					="f0010",
-		["border full"]						="f0011",
-		["border left"]						="f0012",
-		["border top right"]			="f0020",
-		["border top"]						="f0021",
-		["border top left"]				="f0022",
+		["grapes"]								=0x01f347,
+		["melon"]									=0x01f348,
+		["watermelon"]						=0x01f349,
+		["tangerine"]							=0x01f34a,
+		["lemon"]									=0x01f34b,
+		["banana"]								=0x01f34c,
+		["pineapple"]							=0x01f34d,
+		["mango"]								  =0x01f96d,
+		["red apple"]							=0x01f34e,
+		["green apple"]						=0x01f34f,
+		["pear"]									=0x01f350,
+		["peach"]									=0x01f351,
+		["cherries"]							=0x01f352,
+		["strawberry"]						=0x01f353,
+		["blueberries"]						=0x01fad0,
+		["kiwi fruit"]						=0x01f95d,
+		["tomato"]								=0x01f345,
+		["olive"]									=0x01fad2,
+		["coconut"]								=0x01f965,
+		["brick"]									=0x01f9f1,
+		-- 0f00 wall tiles
+		["border bottom right"]		=0x0f0000,
+		["border bottom"]					=0x0f0001,
+		["border bottom left"]		=0x0f0002,
+		["brick wall left corner"] 	=0x0f0006,
+		["brick wall face"]					=0x0f0007,
+		["brick wall right corner"]	=0x0f0008,
+	  ["border right"]					=0x0f0010,
+		["border full"]						=0x0f0011,
+		["border left"]						=0x0f0012,
+		["border top right"]			=0x0f0020,
+		["border top"]						=0x0f0021,
+		["border top left"]				=0x0f0022,
+		-- 1000 characters animated by horizontal flip
+		["redgehog"]              =0x100000
 	},
 
 	groups = {
