@@ -6,7 +6,7 @@ ent = {
     dy=0,
     spr="@",
     anim=nil,
-    c=nil
+    c=nil,
 }
 ent.__index = ent
 
@@ -27,9 +27,15 @@ function ent:moveto(x,y,frames)
   return self
 end
 
-function ent:move()
+function ent:step()
   self.x = self.x + self.dx
   self.y = self.y + self.dy
+  return self
+end
+
+function ent:speed(dx,dy)
+  self.dx = dx
+  self.dy = dy
   return self
 end
 
@@ -44,6 +50,13 @@ function ent:collides(other,xoff,yoff)
   if math.abs(dx) < sr and math.abs(dy) < sr then
     return { dx=api.SIGN(dx)*sr-dx, dy=api.SIGN(dy)*sr-dy }
   end
+end
+
+function ent:near(x,y)
+  if math.abs(self.x-x) < self.r and math.abs(self.y-y) < self.r then
+    return true
+  end
+  return false
 end
 
 function ent:ANIMATE(f)

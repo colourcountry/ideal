@@ -21,9 +21,9 @@ end
 
 function Main:DRAW()
   CLS()
-  COLOUR()
+  TWINKLE()
   BOX(L, L, W-2*L, 4*L)
-  COLOUR(10)
+  COLOUR(3)
   TITLE(cart.name, W/2, 3*L, 0, 0)
   y = S*4
   for i=1,#memory do

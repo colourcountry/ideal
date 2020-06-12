@@ -10,7 +10,6 @@ map = {
   zw = nil,
   zh = nil,
   canvas = nil,
-  tint = nil
 }
 map.__index = map
 
@@ -44,15 +43,9 @@ end
 
 function map:DRAW()
   if not self.canvas then return end
-  local tint = colours[self.tint] or {1,0,0}
   self.canvas:start()
   api.CLS()
   for e in self:ITEMS() do
-    if api.IS(e,"tint") then -- FIXME: magic word
-      self.canvas:colour(tint)
-    else
-      self.canvas:colour({1,0,0})
-    end
     draw_with_text(e,text_colour)
   end
   if self.hx and self.hy then
@@ -135,8 +128,7 @@ function map:set(mx,my,spr,c)
     self.sy = my
     self.canvas = sys.new_canvas((self.sx+1)*S,(self.sy+1)*S)
   end
-  spr = sys.sprites.names[spr] or spr
-  local e = sys.api.ENT(0,0,8,spr,c,self.flagsets[spr])
+  local e = sys.api.ENT(0,0,S/2,spr,c,self.flagsets[spr])
   return self:set_entity(mx,my,e)
 end
 
@@ -168,17 +160,10 @@ function map:fromLines(lines,c)
   end
 end
 
-
-function map:remove(mx,my)
-  if self[mx] then
-    self[mx][my] = nil
-  end
-end
-
 function map:empty()
   for i=1,self.sx do
     for j=1,self.sy do
-      self:remove(i,j)
+      self:unset(i,j)
     end
   end
   self.sx = 0
@@ -187,6 +172,10 @@ end
 
 function map:coord(x,y)
   return math.floor((x+8+self.cx)/S), math.floor((y+8+self.cy)/S)
+end
+
+function map:whereis(e) -- return the real world coordinate of this entity without freeing it
+  return e.x-self.cx, e.y-self.cy
 end
 
 function map:under(e) -- given a free entity, what map entity is at the same place
@@ -219,7 +208,7 @@ function map:grab(e,if_empty,in_zone)
 end
 
 function map:free(e)
-  self:remove(e.x/S,e.y/S)
+  self:unset(e.x/S,e.y/S)
   if e then
     e.x = e.x - self.cx
     e.y = e.y - self.cy
@@ -256,10 +245,6 @@ function map:move_and_repel(e)
   if c then
     e.y = e.y - c.dy
   end
-end
-
-function map:tint(c)
-  self.tint = c
 end
 
 return map

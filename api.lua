@@ -43,8 +43,8 @@ function api.STR(o)
     end
     local s = '{ '
     for k,v in pairs(o) do
-       if type(k) ~= 'number' then k = '"'..k..'"' end
-       s = s .. '['..k..'] = ' .. api.STR(v) .. ','
+       if type(k) == 'string' then k = '"'..k..'"' end
+       s = s .. '['..api.STR(k)..'] = ' .. api.STR(v) .. ','
     end
     return s .. '} '
   else
@@ -100,19 +100,18 @@ function api.RELEASE(ox, oy, x, y)
 end
 
 function api.BORDER(c)
+  c = (c and math.floor(c%16)) or -1
   local f = {colours[c][1]/2, colours[c][2]/2, colours[c][3]/2, 1}
   lg.setBackgroundColor(f)
 end
 
+function api.TWINKLE()
+  api.COLOUR(api.T/5)
+end
+
 function api.COLOUR(fg)
-  fg = (fg and math.floor(fg)) or -1
-  if colours[fg] then
-    cur_fg = colours[fg]
-  else
-    cur_fg = colours[math.floor((api.T/5+twinkle)%11)]
-    twinkle = twinkle + 1
-  end
-  lg.setColor(cur_fg)
+  cur_fg = colours[(fg and math.floor(fg%16)) or 0]
+  cur_shader:send("transform",matrix_for_colour(cur_fg))
 end
 
 texts = {}
@@ -140,24 +139,18 @@ function print_string(strg, x, y, anchor_x, anchor_y, scale)
   end
   local c = new_canvas(api.S*#codepoints,api.S)
   c:start()
-  c:colour(cur_fg)
+  cur_shader:send("transform",identity_matrix)
   for i,cp in ipairs(codepoints) do
     api.SPR(cp,i*api.S-api.S/2,api.S/2)
   end
   c:stop()
 
   texts[key]=c
+  cur_shader:send("transform",matrix_for_colour(cur_fg))
   print_text(c, x, y, anchor_x or 1, anchor_y or 1, scale)
 end
 
 function api.SPR(spr, x, y)
-  if type(spr)=="string" then
-    if sys.sprites.names[spr] then
-      spr = sys.sprites.names[spr]
-    else
-      spr = tonumber(spr,16)
-    end
-  end
   if quads[spr] then
     lg.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
   else
@@ -166,7 +159,14 @@ function api.SPR(spr, x, y)
 end
 
 function api.SPRGROUP(name)
-  return sys.sprites.groups[name]
+  return {}
+  --return sys.sprites.groups[name]  --FIXME: add groups
+end
+
+function api.SPRCODE(name)
+  local r = sprites.names[name] or sprites.unicode[name]
+  api.LOG("Looking up",name,"=",r)
+  return r
 end
 
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
@@ -284,8 +284,8 @@ function api.EJECT()
   })
 end
 
-function api.ERROR(msg)
-  api.LOG("ERROR: ",msg)
+function api.ERROR(msg,...)
+  api.LOG("CART ERROR: ",msg,"! ",...)
   switch_cart("_error."..api.API, "Main", {
     msg=msg,
     debug=cart_arg_found,
@@ -484,13 +484,16 @@ function api.MENU(items)
   return o
 end
 
+spr_info = api.SPRCODE("CIRCLED INFORMATION SOURCE")
+spr_eject = api.SPRCODE("EJECT SYMBOL")
+
 function api.MAINMENU(modelist)
   local m = {}
   for i=1,#modelist do
     m[#m+1] = { name=modelist[i].name, icon=modelist[i].icon, action=function() api.GO(modelist[i]) end }
   end
-  m[#m+1] = { name="Info", icon=105, action=api.MEMORY }
-  m[#m+1] = { name="Eject", icon=0x23cf, action=api.EJECT }
+  m[#m+1] = { name="Info", icon=spr_info, action=api.MEMORY }
+  m[#m+1] = { name="Eject", icon=spr_eject, action=api.EJECT }
   return api.MENU(m)
 end
 
@@ -505,30 +508,6 @@ function api.MODE(name,parent)
   end
   o:init()
   cur_modes[o.name] = o
-  return o
-end
-
-function api.INFOMODE(name,instructions)
-  local o = api.MODE()
-  o.draw = function(self)
-    api.CLS(11)
-    api.COLOUR(-1)
-    api.TITLE(name, api.W/2, 0, 0, -1)
-    api.COLOUR(0)
-    local y = api.L*4
-    for i=1,#instructions do
-      api.COLOUR(instructions[i][2])
-      if instructions[i][1]=="" then
-        y = y + api.L*api.PRINTLINES(api.SPLIT(instructions[i][3],api.W-20,true),10,y)
-      else
-        api.SPR(instructions[i][1],18,y+2)
-        api.COLOUR(0)
-        y = y + api.L*api.PRINTLINES(api.SPLIT(instructions[i][3],api.W-50,true),40,y)
-      end
-      y = y + api.L
-    end
-    api.BORDER(11)
-  end
   return o
 end
 
@@ -552,10 +531,11 @@ function draw_field(item,y,include_desc)
   local text_indent = api.S+api.L
   local text_width = api.W-text_indent-margin*2
   local oy = y
+  api.COLOUR(0)
   if item.icon then
     api.SPR(item.icon,margin+api.S/2,y)
   end
-  api.COLOUR(0)
+  api.COLOUR(13)
   api.PRINT(item.name,margin+text_indent,y,1,-1)
   if include_desc and item.desc and item.desc~="" then
     local lines = api.SPLIT(api.STR(item.desc),text_width/api.L," ")
@@ -565,10 +545,11 @@ function draw_field(item,y,include_desc)
   end
   if item.value then
     local lines = api.SPLIT(api.STR(item.value),text_width/api.L," ")
-    api.COLOUR(10)
+    api.COLOUR(3)
     api.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
     y = y + api.L*#lines
   end
+  api.COLOUR(0)
   return y - oy + api.L
 end
 

@@ -6,6 +6,7 @@ loop.__index = loop
 
 function loop:add(x,limit)
   if not x then return end
+  sys.api.LOG("Adding id ",x.id,"to",self)
   if self.length<0 then
     sys.api.LOG("Length??",self)
   end
@@ -25,7 +26,7 @@ function loop:add(x,limit)
   self.path[self.top] = self.first
   self.rpath[self.first] = self.top
   self.length = self.length + 1
-  self.top = self.top + 1 -- TODO: fill in gaps before increasing top
+  self.top = self.top + 1
 
   if limit and self.length>limit then
     return self:rot()
@@ -33,12 +34,15 @@ function loop:add(x,limit)
 end
 
 function loop:LOG()
-  local s = tostring(self.length)..": "..tostring(self.first)..";"
+  if self.length==0 then
+    return "Loop of 0"
+  end
+  local s = "Loop of "..tostring(self.length)..": "..tostring(self.first).."="..tostring(self.items[self.first].id).."; "
   local i = self.path[self.first]
   local b = 0
   while i ~= self.first do
     b = b + 1
-    s = s..tostring(i)..","
+    s = s..tostring(i).."="..tostring(self.items[i].id)..", "
     i = self.path[i]
     if not i then
       s = s.." nil?"
@@ -53,9 +57,10 @@ function loop:LOG()
 end
 
 function loop:remove(i)
-  --sys.api.LOG("Removing",i,"from",self)
-  if not self.path[i] then
-    return -- shrug
+  sys.api.LOG("Removing index ",i,"from",self)
+  if not self.items[i] then
+    sys.api.LOG("Index",i,"was not in the loop!")
+    return
   end
   if self.length <= 1 then
     self.length = 0
@@ -66,29 +71,37 @@ function loop:remove(i)
   if self.first == i then
     self.first = self.path[i]
   end
-  self.path[i] = nil
-  self.rpath[i] = nil
+  -- self.path[i] = nil -- leave the path back into the loop, in case we are iterating
+  -- self.rpath[i] = nil
   self.items[i] = nil
   self.length = self.length - 1
 end
 
 function loop:ITEMS()
   local i = self.first
-  local b = 0
+  local prev_first = nil
   return function()
-    if b >= self.length then
+    if not self.items then
       return
     end
-    if b > 0 and i == self.first then
-      return
+    if i == self.first then
+      if self.first ~= prev_first then
+        -- either the first time round, or the first item has been removed
+        prev_first = self.first
+      else
+        -- we have reached this item for a second time
+        return
+      end
     end
     local o = i
     i = self.path[i]
-    b = b + 1
-    if self.items[o] then
-      return b, self.items[o]
+    --api.LOG("Loop is",self)
+    while not self.items[o] do
+      api.LOG("Some items removed, finding way back to loop:",i,self.path[i],self.items[i])
+      o = i
+      i = self.path[i]
     end
-    return b, nil
+    return o, self.items[o]
   end
 end
 

@@ -22,7 +22,6 @@ function Main:START(secrets)
         id=k,
         name=v.name,
         icon=v.icon,
-        colour=5,
         action=function() secrets.switch_cart(k) end
       }
     end
@@ -42,9 +41,9 @@ end
 function Main:DRAW()
   CLS()
   DRAW(m)
-  COLOUR()
+  TWINKLE()
   TITLE(MODEL, W/2, 24, 0, 0)
-  COLOUR(0)
+  COLOUR(13)
   PRINT(msg, W/2, 40, 0, 0)
 end
 

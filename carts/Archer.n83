@@ -1,33 +1,51 @@
-Reg = {  stop=0x100000, down=0x100002, right=0x100004, left=0x100006, up=0x100008 }
-
 Cart = {
   name="Archer",
   info="a puzzle game",
   api="n83",
-  icon=Reg.stop,
+  icon=SPRCODE("1/2 redgehog facing down"),
 }
 
+Redge = {
+  stop=SPRCODE("1/2 redgehog facing down"),
+  down=SPRCODE("1/2 redgehog moving down"),
+  right=SPRCODE("1/2 redgehog moving right"),
+  left=SPRCODE("1/2 redgehog moving left"),
+  up=SPRCODE("1/2 redgehog moving up"),
+}
+
+arrows = {
+  left=SPRCODE("WIDE-HEADED LEFTWARDS VERY HEAVY BARB ARROW"),
+  up=SPRCODE("WIDE-HEADED UPWARDS VERY HEAVY BARB ARROW"),
+  right=SPRCODE("WIDE-HEADED RIGHTWARDS VERY HEAVY BARB ARROW"),
+  down=SPRCODE("WIDE-HEADED DOWNWARDS VERY HEAVY BARB ARROW"),
+}
+
+fruit = SPRCODE("CHERRIES")
+ogre = SPRCODE("JAPANESE OGRE")
+bomb = SPRCODE("BOMB")
+
 legend = {
-  ["b"]="bomb",
-  ["m"]="japanese ogre",
-  ["<"]=0x1f880,
-  ["^"]=0x1f881,
-  [">"]=0x1f882,
-  ["v"]=0x1f883,
-  ["o"]=SPRGROUP("food-fruit"),
-  ["@"]=Reg.stop
+  ["b"]={bomb,0},
+  ["m"]={ogre,8},
+  ["o"]={fruit,0},
+  ["<"]={arrows.left,3},
+  ["^"]={arrows.up,3},
+  [">"]={arrows.right,3},
+  ["v"]={arrows.down,3},
+  ["@"]={Redge.stop,0},
 }
 
 plans = {
   {
     ">>   v",
-    "@  mbv",
-    "^ o   ",
-    "^   <<",
+    "@  m v",
+    "^   b ",
+    "^  o<<",
   }
 }
 
-shoot_speed = 3
+shoot_speed = 0.5
+carry_slot = { W/2, H-S }
 
 function new_level(i)
   local plan = plans[i]
@@ -36,45 +54,35 @@ function new_level(i)
   local h = #plan
   local w = #plan[1]
   local player = nil
-  local fruit = CHOOSE(legend["o"])
+  local tint = (i+12)%13
 
   map = MAP({
-    ["brick wall left corner"]={"tint"},
-    ["brick wall face"]={"tint"},
-    ["brick wall right corner"]={"tint"},
-    ["japanese ogre"]={"tint"},
-    [0x1f880]={"arrow"},
-    [0x1f881]={"arrow"},
-    [0x1f882]={"arrow"},
-    [0x1f883]={"arrow"},
+    [arrows.left]={"arrow"},
+    [arrows.up]={"arrow"},
+    [arrows.down]={"arrow"},
+    [arrows.right]={"arrow"},
     [fruit]={"edible"}
   })
-  map:tint(i%10+1)
 
   for i=1,w do
     for j=1,h do
       local here = CHARAT(plan[j],i)
-      local p = nil
-      if here=="o" then
-        p = fruit
-      else
-        p = legend[here]
-      end
+      p = legend[here]
 
       if p then
-        local e = map:set(i+1,j+1,p,10)
+        local e = map:set(i+1,j+1,p[1],p[2])
         if here=="@" then
           player = e
         end
       end
     end
-    map:set(i+1,1,"brick wall face",10)
-    map:set(i+1,h+2,"brick wall face",10)
+    map:set(i+1,1,SPRCODE("brick wall face"),tint)
+    map:set(i+1,h+2,SPRCODE("brick wall face"),tint)
   end
 
   for j=1,h+2 do
-    map:set(1,j,"border right",10)
-    map:set(w+2,j,"border left",10)
+    map:set(1,j,SPRCODE("border right"),tint)
+    map:set(w+2,j,SPRCODE("border left"),tint)
   end
   map:centre(W/2,H/2)
 
@@ -87,7 +95,7 @@ end
 
 
 function Cart:START()
-  FIELD(1,Reg.stop,"Plays","",2,0)
+  FIELD(1,Redge.stop,"Plays","",2,0)
   FIELD(2,0x1f3c6,"High score","",3,0)
   FIELD(3,nil,"How to play","Collect arrows and explode the ogre")
   FIELD(4,nil,"Credits","IDEALsoft 19828")
@@ -110,9 +118,9 @@ function Menu:DRAW()
   DRAW(mode_menu)
   COLOUR(5)
   BLOCK(L, L, W-2*L, 4*L)
-  COLOUR()
+  TWINKLE()
   BOX(L, L, W-2*L, 4*L)
-  COLOUR(10)
+  COLOUR(13)
   TITLE(Cart.name, W/2, 3*L, 0, 0)
   DRAWFIELD(2,S+6*L)
 end
@@ -120,7 +128,7 @@ end
 ------------------------------------------------------------------- main
 
 Main = MODE("Play")
-Main.icon = "japanese ogre"
+Main.icon = ogre
 
 function wigwag() return FLR(T/8)%2 end
 
@@ -129,18 +137,23 @@ function Main:START()
   cur_level = state[1] or 1
   cur_score = state[2] or 0
   player = new_level(cur_level)
+  restart_button = ENT(W/2,S,S,SPRCODE("LEFTWARDS ARROW WITH HOOK"))
+  cur_arrows = LOOP()
   TIMER(60)
 end
 
 function draw_state()
-  COLOUR(0)
+  COLOUR(7)
   PRINT(cur_score, W/4, L, 0, 0)
   PRINT(TIMER(), 3*W/4, L, 0, 0)
+  DRAW(restart_button)
   if player_carrying then
-    player_carrying:DRAW()
+    DRAW(player_carrying)
+    TWINKLE()
+    BOX(player_carrying.x-S,player_carrying.y-S,S*2,S*2)
   end
-  if player_shooting then
-    player_shooting:DRAW()
+  for i,e in ITEMS(cur_arrows) do
+    DRAW(e)
   end
 end
 
@@ -150,44 +163,91 @@ function Main:DRAW()
   draw_state()
 end
 
+function kill_arrow(arrow,i)
+  -- FIXME: I don't want to have to know both of these things
+  LOG("Removing",arrow,i,cur_arrows)
+  cur_arrows:remove(i)
+  LOG("...now",cur_arrows)
+  if arrow==player_shooting then
+    LOG("Player's arrow died.")
+    player_shooting = nil
+  end
+end
+
+function arrow_hit(here,arrow,i,my_arrow)
+  LOG("Arrow",i,arrow,"(my arrow ",my_arrow,"hit",here)
+  if here==player then
+    if my_arrow then return end
+    GO(Over)
+  end
+
+  if IS(here,ogre) then
+    LOG("Arrow",i,"hit an ogre.")
+    if not my_arrow then return end
+    local x, y = map:whereis(here)
+    cur_arrows:add(ENT(x,y,S,arrows.left,0):speed(-shoot_speed,0))
+    cur_arrows:add(ENT(x,y,S,arrows.right,0):speed(shoot_speed,0))
+    cur_arrows:add(ENT(x,y,S,arrows.up,0):speed(0,-shoot_speed))
+    cur_arrows:add(ENT(x,y,S,arrows.down,0):speed(0,shoot_speed))
+    kill_arrow(arrow,i)
+    return
+  end
+
+  if IS(here,"arrow") then
+    LOG("Arrow",i,"hit an arrow.")
+    map:free(here)
+    kill_arrow(arrow,i)
+    return
+  end
+
+  if IS(here,fruit) then
+    LOG("Arrow",i,"hit a fruit.")
+    cur_score = cur_score - 100
+    map:free(here)
+    kill_arrow(arrow,i)
+    return
+  end
+
+  LOG("Arrow",i,"hit a ",here.spr)
+  kill_arrow(arrow,i)
+  return
+end
+
 function Main:UPDATE()
   map:UPDATE()
-  if player_shooting then
-    player_shooting:move()
-    if player_shooting:oob() then
-      player_shooting = nil
-      return
+  LOG("UPDATE:",cur_arrows)
+  for i,arrow in ITEMS(cur_arrows) do
+    LOG(i,arrow)
+    arrow:step()
+
+    if arrow:oob() then
+      LOG("oob",arrow)
+      kill_arrow(arrow,i)
     end
-    local here = map:under(player_shooting)
+
+    local here = map:under(arrow)
     if here then
-      if here==player then return end
-      LOG(here)
-      if IS(here,"japanese ogre") then
-        cur_score = cur_score + 100
-        SAVE({cur_level, cur_score})
-        GO(Over)
-      end
-      player_shooting = nil
+      arrow_hit(here,arrow,i,arrow==player_shooting)
     end
   end
 end
 
 function shoot(e)
   player_shooting = player_carrying:moveto(player.x-map.cx,player.y-map.cy)
+  cur_arrows:add(player_shooting)
   cur_score = cur_score - 10
   player_carrying = nil
-  if player_shooting.spr == 0x1f880 then player_shooting.dx = -shoot_speed return end
-  if player_shooting.spr == 0x1f881 then player_shooting.dy = -shoot_speed return end
-  if player_shooting.spr == 0x1f882 then player_shooting.dx = shoot_speed return end
-  if player_shooting.spr == 0x1f883 then player_shooting.dy = shoot_speed return end
+  if IS(player_shooting,arrows.left) then player_shooting:speed(-shoot_speed,0) return end
+  if IS(player_shooting,arrows.up) then player_shooting.dy = -shoot_speed return end
+  if IS(player_shooting,arrows.right) then player_shooting.dx = shoot_speed return end
+  if IS(player_shooting,arrows.down) then player_shooting.dy = shoot_speed return end
+  ERROR("bad assertion","player tried to shoot a weird object",player_shooting)
 end
 
 function Main:DRAG(ox, oy, x, y)
-  if player_carrying then
-    if ABS(ox-player_carrying.x)<S and ABS(oy-player_carrying.y)<S then
-      shoot(player_carrying)
-      player.busy = true -- don't move until release
-    end
+  if (not player_shooting) and player_carrying and player_carrying:near(x,y) then
+    shoot(player_carrying)
+    player.busy = true -- don't move until release
   end
 
   if player.moving or player.busy then return end
@@ -209,31 +269,34 @@ function Main:DRAG(ox, oy, x, y)
   end
 
   if IS(neighbour,"arrow") and not player_carrying then
-    map:free(neighbour):moveto(W/2,H-S,10)
+    map:free(neighbour):moveto(carry_slot[1], carry_slot[2])
     player_carrying = neighbour
-    LOG(player_carrying)
     move(dx,dy)
     return
   end
 
-  player.spr=Reg.stop -- solid
+  player.spr=Redge.stop -- solid
 end
 
 function move(dx,dy)
   map:move(player,dx,dy,10)
   ANIMATE(player,wigwag)
-  if dx<0 then player.spr=Reg.left return end
-  if dx>0 then player.spr=Reg.right return
+  if dx<0 then player.spr=Redge.left return end
+  if dx>0 then player.spr=Redge.right return
   end
-  if dy<0 then player.spr=Reg.up return end
-  if dy>0 then player.spr=Reg.down return end
-  player.spr=Reg.stop
+  if dy<0 then player.spr=Redge.up return end
+  if dy>0 then player.spr=Redge.down return end
+  player.spr=Redge.stop
 end
 
 function Main:RELEASE(x, y)
   player:stop()
-  player.spr = Reg.stop
+  player.spr = Redge.stop
   player.busy = false
+
+  if restart_button:near(x,y) then
+    GO(Main)
+  end
 end
 
 ------------------------------------------------------------------- game over

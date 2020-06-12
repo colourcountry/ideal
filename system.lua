@@ -14,7 +14,10 @@ sprite_radius=sprite_size/2
 
 atlases = {}
 quads = {}
-sprites = require("sprites")
+sprites = {
+  unicode=require("atlas/cldr"),
+  names=require("atlas/names")
+}
 
 api = require("api")
 carts={}
@@ -52,7 +55,7 @@ end
 colours = require("colours")
 white = colours[0]
 
-cur_fg = white
+cur_fg = colours[8]
 cur_mode = "unset"
 cur_touches = {}
 mouse_touch_id = "MOUSE"
@@ -68,8 +71,6 @@ shader_code = [[
                 return fragment_color * transform + bias;
         }
 ]]
-cur_shader = lg.newShader(shader_code)
-lg.setShader(cur_shader)
 
 function matrix_for_colour(c)
   return {
@@ -80,18 +81,18 @@ function matrix_for_colour(c)
   }
 end
 
+cur_shader = lg.newShader(shader_code)
+identity_matrix = matrix_for_colour({1,0,0})
+lg.setShader(cur_shader)
+
 function new_canvas(w, h)
   if w==0 or h==0 then return end
   local c = lg.newCanvas(w*units,h*units)
-  --local s = lg.newShader(shader_code)
-  cur_shader:send("transform",matrix_for_colour({1,0,0}))
-  cur_shader:send("bias",{0, 0, 0, 0})
   return {
     w=w,
     h=h,
     start=function()
       lg.push("all")
-      --lg.setShader(s)
       lg.setCanvas(c)
     end,
     stop=function()
@@ -99,9 +100,6 @@ function new_canvas(w, h)
     end,
     paste=function(_,x,y)
       lg.draw(c,(x or 0)*units,(y or 0)*units)
-    end,
-    colour=function(_,cl)
-      cur_shader:send("transform",matrix_for_colour(cl))
     end
   }
 end
@@ -173,22 +171,23 @@ end
 
 function love.draw()
   draw_time = love.timer.getTime()
-  twinkle = 0
-  --lg.setColor(100,0,100)
-  --lg.circle("fill", screenW, screenH, api.T%screenH)
-  --lg.setColor(100,100,0)
-  --lg.circle("fill", 0, 0, api.T%screenH)
-  lg.setColor(255,255,255)
+  cur_shader:send("transform",identity_matrix)
+  cur_shader:send("bias",{0, 0, 0, 0})
+
   canvas:start()
   if cur_mode.DRAW then
     cur_mode:DRAW()
   end
   canvas:stop()
+
 	lg.push("all") -- Push transformation state, The translate and scale will affect everything below until lg.pop()
 	lg.translate( translateX, translateY ) -- Move to the appropriate top left corner
 	lg.scale(scale,scale) -- Scale
+  cur_shader:send("transform",identity_matrix) -- Identity transform
+  cur_shader:send("bias",{0, 0, 0, 0})
   canvas:paste()
 	lg.pop() -- pop transformation state
+
   api.T = api.T + 1
   draw_time = love.timer.getTime() - draw_time
   drawTimers()

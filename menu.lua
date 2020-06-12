@@ -1,5 +1,6 @@
 menu = {
-  colour = 0,
+  text_colour = 13,
+  highlight_colour = 14,
   topY = 0,
   scrollY = 0,
   initY = 0,
@@ -80,10 +81,10 @@ function menu:DRAW()
   for i=1, #self.items do
     local item = self.items[i]
     if self.selected==i then
-      sys.api.COLOUR(11)
+      sys.api.COLOUR(self.highlight_colour)
       sys.api.BLOCK(item.x,item.y+self.offset+self.dragOffset,item.w,item.h)
     end
-    sys.api.COLOUR(self.colour)
+    sys.api.COLOUR(self.text_colour)
     local x = item.x
     local y = item.y+self.offset+self.dragOffset
     if item.icon then
