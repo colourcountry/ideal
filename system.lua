@@ -68,6 +68,8 @@ shader_code = [[
                 return fragment_color * transform + bias;
         }
 ]]
+cur_shader = lg.newShader(shader_code)
+lg.setShader(cur_shader)
 
 function matrix_for_colour(c)
   return {
@@ -81,15 +83,15 @@ end
 function new_canvas(w, h)
   if w==0 or h==0 then return end
   local c = lg.newCanvas(w*units,h*units)
-  local s = lg.newShader(shader_code)
-  s:send("transform",matrix_for_colour({1,0,0}))
-  s:send("bias",{0, 0, 0, 0})
+  --local s = lg.newShader(shader_code)
+  cur_shader:send("transform",matrix_for_colour({1,0,0}))
+  cur_shader:send("bias",{0, 0, 0, 0})
   return {
     w=w,
     h=h,
     start=function()
       lg.push("all")
-      lg.setShader(s)
+      --lg.setShader(s)
       lg.setCanvas(c)
     end,
     stop=function()
@@ -99,7 +101,7 @@ function new_canvas(w, h)
       lg.draw(c,(x or 0)*units,(y or 0)*units)
     end,
     colour=function(_,cl)
-      s:send("transform",matrix_for_colour(cl))
+      cur_shader:send("transform",matrix_for_colour(cl))
     end
   }
 end
