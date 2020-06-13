@@ -52,8 +52,9 @@ function ent:collides(other,xoff,yoff)
   end
 end
 
-function ent:near(x,y)
-  if math.abs(self.x-x) < self.r and math.abs(self.y-y) < self.r then
+function ent:near(x,y,grace)
+  local r = (grace and self.r+grace) or self.r
+  if math.abs(self.x-x) < self.r and math.abs(self.y-y) < self.r+grace then
     return true
   end
   return false

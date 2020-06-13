@@ -179,7 +179,8 @@ function map:whereis(e) -- return the real world coordinate of this entity witho
 end
 
 function map:under(e) -- given a free entity, what map entity is at the same place
-  return self:get(self:coord(e.x,e.y))
+  local mx,my = self:coord(e.x,e.y)
+  return self:get(mx,my), mx, my
 end
 
 function map:highlight(mx,my)

@@ -1,0 +1,67 @@
+Cart = {
+  name="test_loop",
+  hidden=true,
+  api="n83"
+}
+
+-- Test loops by removing stuff in awkward places during iteration.
+
+Main = MODE("Main")
+
+function Main:START()
+  Loop = LOOP()
+  Loop:add(ENT(RND(W),RND(H),8,SPRCODE("CHERRIES")))
+  Loop:add(ENT(RND(W),RND(H),8,SPRCODE("CHERRIES")))
+  Loop:add(ENT(RND(W),RND(H),8,SPRCODE("CHERRIES")))
+end
+
+function Main:DRAW()
+  CLS()
+  DRAW(Loop)
+end
+
+function Main:UPDATE()
+  if T%10~=0 then return end
+  LOG("-------")
+  LOG(Loop)
+  local r = RND(3)
+  local nuke = RND(10)
+  for e in Loop:ITEMS() do
+    if nuke==4 then
+      LOG("-------------------------BOOM")
+      Loop:remove(e)
+    else
+      if r>0 then
+        Loop:remove(e)
+        Loop:add(ENT(RND(W),RND(H),8,SPRCODE("CHERRIES")))
+        r = r - 1
+      end
+      if RND(2)==2 then
+        Loop:add(ENT(RND(W),RND(H),8,SPRCODE("PEACH")))
+        Loop:remove(e)
+      end
+    end
+  end
+  Loop:add(ENT(RND(W),RND(H),8,SPRCODE("CHERRIES")))
+  LOG(Loop)
+end
+
+function Main:TOUCH(x,y,isNew)
+  if (isNew) then
+    EJECT()
+  end
+end
+
+
+
+function Cart:START()
+  GO(Main)
+end
+
+function Cart:SHUTDOWN()
+  if self.__quit then
+    self.__quit()
+  end
+end
+
+return Cart

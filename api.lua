@@ -1,4 +1,4 @@
-api = {
+local api = {
   MODEL="IDEAL-5",
   API="n83",
   URL="IDEAL.COLOURCOUNTRY.NET",
@@ -165,7 +165,10 @@ end
 
 function api.SPRCODE(name)
   local r = sprites.names[name] or sprites.unicode[name]
-  api.LOG("Looking up",name,"=",r)
+  if not r then
+    api.LOG("WARNING: no sprite code for name",name)
+    return 0x2754
+  end
   return r
 end
 
@@ -286,6 +289,7 @@ end
 
 function api.ERROR(msg,...)
   api.LOG("CART ERROR: ",msg,"! ",...)
+  error(msg)
   switch_cart("_error."..api.API, "Main", {
     msg=msg,
     debug=cart_arg_found,

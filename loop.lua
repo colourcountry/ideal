@@ -1,3 +1,5 @@
+-- FIXME this is getting a bit messy, there's probably a better algorithm
+
 loop = {
   length=0,
   path={}
@@ -5,21 +7,26 @@ loop = {
 loop.__index = loop
 
 function loop:add(x,limit)
-  if not x then return end
-  sys.api.LOG("Adding id ",x.id,"to",self)
-  if self.length<0 then
-    sys.api.LOG("Length??",self)
+  if not x then
+    ERROR("Missing parameter","Not enough parameters to loop:add")
+    return
   end
-  if not self.length or self.length<=0 then
+  if self.length<0 then
+    ERROR("Bad loop","Loop of negative length:",self)
+  end
+  if not self.length or self.length==0 then
     self.path={[1]=1}
     self.rpath={[1]=1}
     self.first=1
     self.items={[1]=x}
+    self.ritems={[x]=1}
     self.length=1
     self.top=2
+    api.LOG("Added first item, now",self)
     return
   end
   self.items[self.top] = x
+  self.ritems[x]=self.top
   local last = self.rpath[self.first]
   self.path[last] = self.top
   self.rpath[self.top] = last
@@ -28,16 +35,16 @@ function loop:add(x,limit)
   self.length = self.length + 1
   self.top = self.top + 1
 
+  api.LOG("Added item, now",self)
+
   if limit and self.length>limit then
     return self:rot()
   end
+  return self
 end
 
 function loop:LOG()
-  if self.length==0 then
-    return "Loop of 0"
-  end
-  local s = "Loop of "..tostring(self.length)..": "..tostring(self.first).."="..tostring(self.items[self.first].id).."; "
+  local s = "Loop of "..tostring(self.length)..": "..tostring(self.first).."="..tostring(self.items and self.items[self.first] and self.items[self.first].id).."; "
   local i = self.path[self.first]
   local b = 0
   while i ~= self.first do
@@ -56,12 +63,17 @@ function loop:LOG()
   return s
 end
 
-function loop:remove(i)
-  sys.api.LOG("Removing index ",i,"from",self)
-  if not self.items[i] then
-    sys.api.LOG("Index",i,"was not in the loop!")
+function loop:remove(x)
+  if not x then
+    sys.api.ERROR("Missing parameter","Not enough parameters to loop:remove")
+  end
+  local i = self.ritems and self.ritems[x]
+  if not i then
+    sys.api.LOG("WARNING:",x,"was not in",self)
     return
   end
+  self.items[i] = nil
+  self.ritems[x] = nil
   if self.length <= 1 then
     self.length = 0
     return
@@ -71,9 +83,8 @@ function loop:remove(i)
   if self.first == i then
     self.first = self.path[i]
   end
-  -- self.path[i] = nil -- leave the path back into the loop, in case we are iterating
+  -- self.path[i] = nil -- leave a path back into the loop, in case we are relying on it
   -- self.rpath[i] = nil
-  self.items[i] = nil
   self.length = self.length - 1
 end
 
@@ -81,7 +92,7 @@ function loop:ITEMS()
   local i = self.first
   local prev_first = nil
   return function()
-    if not self.items then
+    if self.length==0 then
       return
     end
     if i == self.first then
@@ -95,18 +106,17 @@ function loop:ITEMS()
     end
     local o = i
     i = self.path[i]
-    --api.LOG("Loop is",self)
     while not self.items[o] do
-      api.LOG("Some items removed, finding way back to loop:",i,self.path[i],self.items[i])
+      -- there should be a path back to what remains of the loop
       o = i
       i = self.path[i]
     end
-    return o, self.items[o]
+    return self.items[o]
   end
 end
 
 function loop:DRAW()
-  for i, obj in self:ITEMS() do
+  for obj in self:ITEMS() do
     obj:DRAW()
   end
 end

@@ -13,29 +13,29 @@ Redge = {
   up=SPRCODE("1/2 redgehog moving up"),
 }
 
-arrows = {
+Arrow_sprites = {
   left=SPRCODE("WIDE-HEADED LEFTWARDS VERY HEAVY BARB ARROW"),
   up=SPRCODE("WIDE-HEADED UPWARDS VERY HEAVY BARB ARROW"),
   right=SPRCODE("WIDE-HEADED RIGHTWARDS VERY HEAVY BARB ARROW"),
   down=SPRCODE("WIDE-HEADED DOWNWARDS VERY HEAVY BARB ARROW"),
 }
 
-fruit = SPRCODE("CHERRIES")
-ogre = SPRCODE("JAPANESE OGRE")
-bomb = SPRCODE("BOMB")
+Fruit = SPRCODE("CHERRIES")
+Ogre = SPRCODE("JAPANESE OGRE")
+Bomb = SPRCODE("BOMB")
 
-legend = {
-  ["b"]={bomb,0},
-  ["m"]={ogre,8},
-  ["o"]={fruit,0},
-  ["<"]={arrows.left,3},
-  ["^"]={arrows.up,3},
-  [">"]={arrows.right,3},
-  ["v"]={arrows.down,3},
+Legend = {
+  ["b"]={Bomb,0},
+  ["m"]={Ogre,8},
+  ["o"]={Fruit,0},
+  ["<"]={Arrow_sprites.left,3},
+  ["^"]={Arrow_sprites.up,3},
+  [">"]={Arrow_sprites.right,3},
+  ["v"]={Arrow_sprites.down,3},
   ["@"]={Redge.stop,0},
 }
 
-plans = {
+Plans = {
   {
     ">>   v",
     "@  m v",
@@ -44,11 +44,11 @@ plans = {
   }
 }
 
-shoot_speed = 0.5
-carry_slot = { W/2, H-S }
+Shoot_speed = 2
+Carry_slot = { W/2, H-S }
 
 function new_level(i)
-  local plan = plans[i]
+  local plan = Plans[i]
   if not plan then ERROR("no such level "..STR(i)) return end
 
   local h = #plan
@@ -57,17 +57,17 @@ function new_level(i)
   local tint = (i+12)%13
 
   map = MAP({
-    [arrows.left]={"arrow"},
-    [arrows.up]={"arrow"},
-    [arrows.down]={"arrow"},
-    [arrows.right]={"arrow"},
-    [fruit]={"edible"}
+    [Arrow_sprites.left]={"arrow"},
+    [Arrow_sprites.up]={"arrow"},
+    [Arrow_sprites.down]={"arrow"},
+    [Arrow_sprites.right]={"arrow"},
+    [Fruit]={"edible"}
   })
 
   for i=1,w do
     for j=1,h do
       local here = CHARAT(plan[j],i)
-      p = legend[here]
+      local p = Legend[here]
 
       if p then
         local e = map:set(i+1,j+1,p[1],p[2])
@@ -89,15 +89,10 @@ function new_level(i)
   return player
 end
 
-function draw_scene()
-  DRAW(map)
-end
-
-
 function Cart:START()
   FIELD(1,Redge.stop,"Plays","",2,0)
   FIELD(2,0x1f3c6,"High score","",3,0)
-  FIELD(3,nil,"How to play","Collect arrows and explode the ogre")
+  FIELD(3,nil,"How to play","Collect Arrow_sprites and explode the ogre")
   FIELD(4,nil,"Credits","IDEALsoft 19828")
   FIELD(5,nil,"Inspired by","C64 Saracen")
   GO(Menu)
@@ -108,14 +103,14 @@ end
 Menu = MODE("Main menu")
 
 -- standard menu functions
-function Menu:START() mode_menu = MAINMENU({Main}) end
-function Menu:TOUCH(x, y) mode_menu:handle_touch(x, y) end
-function Menu:DRAG(ox, oy, x, y) mode_menu:handle_drag(ox, oy, x, y) end
-function Menu:RELEASE(ox, oy, x, y) mode_menu:handle_release(ox, oy, x, y) end
+function Menu:START() self.menu = MAINMENU({Main}) end
+function Menu:TOUCH(x, y) self.menu:handle_touch(x, y) end
+function Menu:DRAG(ox, oy, x, y) self.menu:handle_drag(ox, oy, x, y) end
+function Menu:RELEASE(ox, oy, x, y) self.menu:handle_release(ox, oy, x, y) end
 
 function Menu:DRAW()
   CLS()
-  DRAW(mode_menu)
+  DRAW(self.menu)
   COLOUR(5)
   BLOCK(L, L, W-2*L, 4*L)
   TWINKLE()
@@ -128,32 +123,36 @@ end
 ------------------------------------------------------------------- main
 
 Main = MODE("Play")
-Main.icon = ogre
+Main.icon = Ogre
 
 function wigwag() return FLR(T/8)%2 end
 
 function Main:START()
   local state = LOAD()
-  cur_level = state[1] or 1
-  cur_score = state[2] or 0
-  player = new_level(cur_level)
+  level = state[1] or 1
+  score = state[2] or 0
+  player = new_level(level)
   restart_button = ENT(W/2,S,S,SPRCODE("LEFTWARDS ARROW WITH HOOK"))
-  cur_arrows = LOOP()
+  arrows = LOOP()
   TIMER(60)
+end
+
+function draw_scene()
+  DRAW(map)
+  for a in ITEMS(arrows) do
+    DRAW(a)
+  end
 end
 
 function draw_state()
   COLOUR(7)
-  PRINT(cur_score, W/4, L, 0, 0)
+  PRINT(score, W/4, L, 0, 0)
   PRINT(TIMER(), 3*W/4, L, 0, 0)
   DRAW(restart_button)
   if player_carrying then
     DRAW(player_carrying)
     TWINKLE()
     BOX(player_carrying.x-S,player_carrying.y-S,S*2,S*2)
-  end
-  for i,e in ITEMS(cur_arrows) do
-    DRAW(e)
   end
 end
 
@@ -163,90 +162,92 @@ function Main:DRAW()
   draw_state()
 end
 
-function kill_arrow(arrow,i)
-  -- FIXME: I don't want to have to know both of these things
-  LOG("Removing",arrow,i,cur_arrows)
-  cur_arrows:remove(i)
-  LOG("...now",cur_arrows)
-  if arrow==player_shooting then
-    LOG("Player's arrow died.")
-    player_shooting = nil
+function kill_arrow(a)
+  LOG("Removing",a,"from",arrows)
+  arrows:remove(a)
+  if a.from_player then
+    LOG("player's arrow died.")
   end
 end
 
-function arrow_hit(here,arrow,i,my_arrow)
-  LOG("Arrow",i,arrow,"(my arrow ",my_arrow,"hit",here)
+function arrow_hit(here,a)
+  LOG("Arrow",a,"hit",here)
   if here==player then
-    if my_arrow then return end
+    if a.from_player then return end
     GO(Over)
   end
 
-  if IS(here,ogre) then
+  local x, y = map:whereis(here)
+
+  if IS(here,Ogre) then
     LOG("Arrow",i,"hit an ogre.")
-    if not my_arrow then return end
-    local x, y = map:whereis(here)
-    cur_arrows:add(ENT(x,y,S,arrows.left,0):speed(-shoot_speed,0))
-    cur_arrows:add(ENT(x,y,S,arrows.right,0):speed(shoot_speed,0))
-    cur_arrows:add(ENT(x,y,S,arrows.up,0):speed(0,-shoot_speed))
-    cur_arrows:add(ENT(x,y,S,arrows.down,0):speed(0,shoot_speed))
-    kill_arrow(arrow,i)
+    if not a.from_player then return end
+    arrows:add(ENT(x,y,S,Arrow_sprites.left,0):speed(-Shoot_speed,0))
+    arrows:add(ENT(x,y,S,Arrow_sprites.right,0):speed(Shoot_speed,0))
+    arrows:add(ENT(x,y,S,Arrow_sprites.up,0):speed(0,-Shoot_speed))
+    arrows:add(ENT(x,y,S,Arrow_sprites.down,0):speed(0,Shoot_speed))
+    kill_arrow(a)
+    return
+  end
+
+  if IS(here,Bomb) then
+    LOG("Arrow",a,"hit a bomb.")
+    kill_arrow(a)
     return
   end
 
   if IS(here,"arrow") then
-    LOG("Arrow",i,"hit an arrow.")
+    LOG("Arrow",a,"hit an arrow.")
     map:free(here)
-    kill_arrow(arrow,i)
+    kill_arrow(a)
     return
   end
 
   if IS(here,fruit) then
-    LOG("Arrow",i,"hit a fruit.")
-    cur_score = cur_score - 100
+    LOG("Arrow",a,"hit a fruit.")
+    score = score - 100
     map:free(here)
-    kill_arrow(arrow,i)
+    kill_arrow(a)
     return
   end
 
-  LOG("Arrow",i,"hit a ",here.spr)
-  kill_arrow(arrow,i)
+  LOG("Arrow",a,"hit a ",here.spr)
+  kill_arrow(a)
   return
 end
 
 function Main:UPDATE()
   map:UPDATE()
-  LOG("UPDATE:",cur_arrows)
-  for i,arrow in ITEMS(cur_arrows) do
-    LOG(i,arrow)
-    arrow:step()
+  for a in ITEMS(arrows) do
+    a:step()
 
-    if arrow:oob() then
-      LOG("oob",arrow)
-      kill_arrow(arrow,i)
+    if a:oob() then
+      LOG("oob",a)
+      kill_arrow(a)
     end
 
-    local here = map:under(arrow)
+    local here = map:under(a)
     if here then
-      arrow_hit(here,arrow,i,arrow==player_shooting)
+      arrow_hit(here,a)
     end
   end
 end
 
-function shoot(e)
-  player_shooting = player_carrying:moveto(player.x-map.cx,player.y-map.cy)
-  cur_arrows:add(player_shooting)
-  cur_score = cur_score - 10
+function Shoot(e)
+  local player_shooting = player_carrying:moveto(player.x-map.cx,player.y-map.cy)
+  arrows:add(player_shooting)
+  player_shooting.from_player = true
   player_carrying = nil
-  if IS(player_shooting,arrows.left) then player_shooting:speed(-shoot_speed,0) return end
-  if IS(player_shooting,arrows.up) then player_shooting.dy = -shoot_speed return end
-  if IS(player_shooting,arrows.right) then player_shooting.dx = shoot_speed return end
-  if IS(player_shooting,arrows.down) then player_shooting.dy = shoot_speed return end
+  if IS(player_shooting,Arrow_sprites.left) then player_shooting:speed(-Shoot_speed,0) return end
+  if IS(player_shooting,Arrow_sprites.up) then player_shooting.dy = -Shoot_speed return end
+  if IS(player_shooting,Arrow_sprites.right) then player_shooting.dx = Shoot_speed return end
+  if IS(player_shooting,Arrow_sprites.down) then player_shooting.dy = Shoot_speed return end
   ERROR("bad assertion","player tried to shoot a weird object",player_shooting)
 end
 
 function Main:DRAG(ox, oy, x, y)
-  if (not player_shooting) and player_carrying and player_carrying:near(x,y) then
-    shoot(player_carrying)
+  if (not player.busy) and player_carrying and player_carrying:near(x,y,L) then
+    Shoot(player_carrying)
     player.busy = true -- don't move until release
   end
 
@@ -263,13 +264,14 @@ function Main:DRAG(ox, oy, x, y)
   end
 
   if IS(neighbour,"edible") then
-    cur_score = cur_score + 10
+    score = score + 50
     move(dx,dy)
     return
   end
 
   if IS(neighbour,"arrow") and not player_carrying then
-    map:free(neighbour):moveto(carry_slot[1], carry_slot[2])
+    score = score + 10
+    map:free(neighbour):moveto(Carry_slot[1], Carry_slot[2])
     player_carrying = neighbour
     move(dx,dy)
     return
@@ -294,7 +296,7 @@ function Main:RELEASE(x, y)
   player.spr = Redge.stop
   player.busy = false
 
-  if restart_button:near(x,y) then
+  if restart_button:near(x,y,L) then
     GO(Main)
   end
 end
@@ -305,10 +307,10 @@ Over = MODE("Game over")
 
 function Over:START()
   local state = LOAD()
-  cur_level = state[1] or 1
-  cur_score = state[2] or 0
+  level = state[1] or 1
+  score = state[2] or 0
   POST(1,1)
-  POST(2,cur_score)
+  POST(2,score)
 end
 
 function Over:DRAW()
@@ -318,8 +320,8 @@ function Over:DRAW()
   TITLE("GAME", W/2, H/2, 0, 0)
   TITLE("OVER", W/2, H/2+S, 0, 0)
   COLOUR(8)
-  PRINT("Level "..cur_score, W/2, H/2+S*3, 0, 0)
-  PRINT("Score "..cur_level, W/2, H/2+S*4, 0, 0)
+  PRINT("level "..score, W/2, H/2+S*3, 0, 0)
+  PRINT("score "..level, W/2, H/2+S*4, 0, 0)
   DRAWFIELD(2,H-S*2)
 end
 
