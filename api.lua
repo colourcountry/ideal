@@ -53,7 +53,7 @@ function api.STR(o)
 end
 
 function api.CHARAT(s,i)
-  return s:sub(i,i)
+  return s:sub(i,i) -- this is actually available to carts via string's metatable but i don't want to go there
 end
 
 function api.LOG(...)
@@ -62,10 +62,6 @@ function api.LOG(...)
     s = s..api.STR(v).." "
   end
   print(s)
-end
-
-function api.SIGN(number)
-  return (number > 0 and 1) or (number == 0 and 0) or -1
 end
 
 function api.ITEMS(iterable)
@@ -103,10 +99,6 @@ function api.BORDER(c)
   c = (c and math.floor(c%16)) or -1
   local f = {colours[c][1]/2, colours[c][2]/2, colours[c][3]/2, 1}
   lg.setBackgroundColor(f)
-end
-
-function api.TWINKLE()
-  api.COLOUR(api.T/5)
 end
 
 function api.COLOUR(fg)
@@ -202,17 +194,6 @@ function print_text(text, x, y, anchor_x, anchor_y, scale)
   end
 end
 
-function api.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
-  for i,s in api.ITEMS(strgs) do
-    if (i==1) then
-      api.PRINT(s, x, y, anchor_x, anchor_y) --FIXME: assumes first line is longest
-    else
-      api.PRINT(s, nil, nil, 1, 0)
-    end
-  end
-  return #strgs
-end
-
 function api.SPLIT(strg, chars, at)
   local l = {}
   while #strg>chars do
@@ -254,8 +235,6 @@ function api.BOX(x, y, w, h)
   lg.pop()
 end
 
-api.RECT = api.BOX
-
 function api.DISC(x, y, r)
   lg.push("all")
   lg.setShader()
@@ -271,8 +250,6 @@ function api.RING(x, y, r)
   lg.circle("line",x*units,y*units,r*units)
   lg.pop()
 end
-
-api.CIRCLE = api.RING
 
 function api.CLS()
   lg.clear({0,0,0,1})
@@ -330,23 +307,6 @@ function api.GO(mode)
   end
 end
 
-function api.QUADRANT(x, y)
-  if x==y or x==-y then
-    local p = love.math.random()
-    if p < 0.5 then
-      y = y*2
-    else
-      y = y/2
-    end
-  end
-  if x > y then
-    if -x > y then return 0,-1 else return 1,0 end
-  end
-  if -x > y then return -1,0 end
-  if x == 0 and y == 0 then return 0,0 end
-  return 0,1
-end
-
 function api.POLAR(x,y,ox,oy)
   if (not ox) then
     ox = api.W/2
@@ -357,15 +317,6 @@ function api.POLAR(x,y,ox,oy)
   local dx = x-ox
   local dy = y-oy
   return math.sqrt(dx*dx+dy*dy), math.deg(math.atan2(dy,dx))
-end
-
-function api.DIRECTION(x,y,s)
-  a = math.sqrt(x*x+y*y)
-  if (s) then
-    return x*s/a, y*s/a, a
-  else
-    return x/a, y/a, a
-  end
 end
 
 function api.DAILY()
@@ -379,42 +330,6 @@ function api.RANDOMIZE(seed)
   return d
 end
 
-function api.SHUFFLE(array)
-  for i=1,#array-1 do
-    local j = math.random(i,#array)
-    array[i], array[j] = array[j], array[i]
-  end
-end
-
-function api.CHOOSE(array)
-  if type(array)=="table" then
-    return array[math.random(1,#array)]
-  end
-  return array -- assume a single value
-end
-
--------------------------------------------------------------------- Object "methods"
--- To make it a bit more BASICy, these global functions just call named methods of the object
-
-function api.DRAW(o)
-  if not o then return end
-  if o.DRAW then
-    o:DRAW()
-  else
-    api.LOG("ERROR: Can't draw object ",o)
-    api.ERROR("Can't draw this")
-  end
-end
-
-function api.ANIMATE(o,f)
-  if not o then return end
-  if o.DRAW then
-    o:ANIMATE(f)
-  else
-    api.LOG("ERROR: Can't draw object ",o)
-    api.ERROR("Can't draw this")
-  end
-end
 
 -------------------------------------------------------------------- Object types
 
@@ -437,7 +352,7 @@ function api.ENT(x, y, r, spr, c, flags)
     flags=flags
   }
   entid = entid+1
-  setmetatable(o, ent)
+  setmetatable(o, {__index=ent})
   return o
 end
 
@@ -452,7 +367,7 @@ function api.LOOP()
   local o = {
     length=0
   }
-  setmetatable(o, loop)
+  setmetatable(o, {__index=loop})
   return o
 end
 
@@ -491,24 +406,13 @@ end
 spr_info = api.SPRCODE("CIRCLED INFORMATION SOURCE")
 spr_eject = api.SPRCODE("EJECT SYMBOL")
 
-function api.MAINMENU(modelist)
-  local m = {}
-  for i=1,#modelist do
-    m[#m+1] = { name=modelist[i].name, icon=modelist[i].icon, action=function() api.GO(modelist[i]) end }
-  end
-  m[#m+1] = { name="Info", icon=spr_info, action=api.MEMORY }
-  m[#m+1] = { name="Eject", icon=spr_eject, action=api.EJECT }
-  return api.MENU(m)
-end
-
 function api.MODE(name,parent)
   local mode = require("mode")
   o = { name=name, parent=parent }
   if (o.parent) then
-    o.parent.__index = o.parent
-    setmetatable(o, o.parent)
+    setmetatable(o, {__index=o.parent})
   else
-    setmetatable(o, mode)
+    setmetatable(o, {__index=mode})
   end
   o:init()
   cur_modes[o.name] = o
@@ -632,10 +536,6 @@ function api.POST(loc,value)
   memory[cur_cartid][loc].value = rule(memory[cur_cartid][loc].value,value)
   api.LOG("...memory now",memory[cur_cartid])
   save_memory(cur_cartid)
-end
-
-function api.SAVE(state)
-  api.POST(0,state)
 end
 
 function api.LOAD()

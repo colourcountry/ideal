@@ -116,7 +116,7 @@ function menu:handle_drag(ox,oy,x,y)
 end
 
 function menu:handle_release(ox,oy,x,y)
-  local dx,dy,d = api.DIRECTION(x-ox,y-oy)
+  local dx,dy,d = sugar.DIRECTION(x-ox,y-oy)
   if self.selected>0 and d<self.sensitivity then
     self.items[self.selected].action()
   end

@@ -1,7 +1,6 @@
 mode = {
   name = "(untitled mode)"
 }
-mode.__index = mode
 
 function mode:LOG()
   local r = " providing "

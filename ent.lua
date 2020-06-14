@@ -8,7 +8,6 @@ ent = {
     anim=nil,
     c=nil,
 }
-ent.__index = ent
 
 local function oob(x, y, r)
   if x<r or y<r or x>sys.api.W-r or y>sys.api.H-r then

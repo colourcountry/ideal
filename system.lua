@@ -19,7 +19,9 @@ sprites = {
   names=require("atlas/names")
 }
 
-api = require("api")
+api = require("api")     -- Commands that proxy or use inaccessible Love/Lua functions
+sugar = require("sugar") -- Commands that could be done in the cart but are very common
+
 carts={}
 
 memory={}
@@ -277,16 +279,12 @@ function love.mousereleased( x, y, button, istouch, presses )
   end
 end
 
-api.__index = api
-
 function environment()
   local o = {}
-  local apikeys = {}
-  for k, v in pairs(api) do
-    apikeys[#apikeys] = k
+  setmetatable(o, {__index=function(_,k)
+    return api[k] or sugar[k]
   end
-  api.LOG("Set up new environment with metatable",apikeys)
-  setmetatable(o, api)
+  })
   return o
 end
 

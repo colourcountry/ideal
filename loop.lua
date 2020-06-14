@@ -4,7 +4,6 @@ loop = {
   length=0,
   path={}
 }
-loop.__index = loop
 
 function loop:add(x,limit)
   if not x then
