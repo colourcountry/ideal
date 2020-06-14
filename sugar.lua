@@ -59,10 +59,6 @@ function sugar.CHOOSE(array)
     return array[RND(1,#array)]
 end
 
-function sugar.SAVE(state)
-  api.POST(0,state)
-end
-
 -------------------------------------------------------------------- Object "methods"
 -- To make it a bit more BASICy, these global functions just call named methods of the object
 

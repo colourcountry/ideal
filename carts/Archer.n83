@@ -14,15 +14,16 @@ Redge = {
 }
 
 Arrow_sprites = {
-  left=SPRCODE("WIDE-HEADED LEFTWARDS VERY HEAVY BARB ARROW"),
-  up=SPRCODE("WIDE-HEADED UPWARDS VERY HEAVY BARB ARROW"),
-  right=SPRCODE("WIDE-HEADED RIGHTWARDS VERY HEAVY BARB ARROW"),
-  down=SPRCODE("WIDE-HEADED DOWNWARDS VERY HEAVY BARB ARROW"),
+  left=SPRCODE("WIDE-HEADED LEFTWARDS HEAVY BARB ARROW"),
+  up=SPRCODE("WIDE-HEADED UPWARDS HEAVY BARB ARROW"),
+  right=SPRCODE("WIDE-HEADED RIGHTWARDS HEAVY BARB ARROW"),
+  down=SPRCODE("WIDE-HEADED DOWNWARDS HEAVY BARB ARROW"),
 }
 
 Fruit = SPRCODE("CHERRIES")
 Ogre = SPRCODE("JAPANESE OGRE")
 Bomb = SPRCODE("BOMB")
+Explosion = SPRCODE("COLLISION SYMBOL")
 
 Legend = {
   ["b"]={Bomb,0},
@@ -32,16 +33,21 @@ Legend = {
   ["^"]={Arrow_sprites.up,3},
   [">"]={Arrow_sprites.right,3},
   ["v"]={Arrow_sprites.down,3},
+  ["#"]={SPRCODE("brick wall face"),-1},
   ["@"]={Redge.stop,0},
 }
 
 Plans = {
   {
-    ">>   v",
-    "@  m v",
-    "^   b ",
-    "^  o<<",
-  }
+    "@>  m o",
+    "<  b   ",
+  },
+  {
+    ">v# b ",
+    "@ #m b",
+    "^ #  b",
+    "^bbbbb",
+  },
 }
 
 Shoot_speed = 2
@@ -49,19 +55,20 @@ Carry_slot = { W/2, H-S }
 
 function new_level(i)
   local plan = Plans[i]
-  if not plan then ERROR("no such level "..STR(i)) return end
+  if not plan then ERROR("Bad plan","No plan for level",i) return end
 
   local h = #plan
   local w = #plan[1]
   local player = nil
-  local tint = (i+12)%13
+  local tint = ((i+12)*3)%13
 
   map = MAP({
-    [Arrow_sprites.left]={"arrow"},
-    [Arrow_sprites.up]={"arrow"},
-    [Arrow_sprites.down]={"arrow"},
-    [Arrow_sprites.right]={"arrow"},
-    [Fruit]={"edible"}
+    [Arrow_sprites.left]={"arrow","fragile"},
+    [Arrow_sprites.up]={"arrow","fragile"},
+    [Arrow_sprites.down]={"arrow","fragile"},
+    [Arrow_sprites.right]={"arrow","fragile"},
+    [Fruit]={"edible","fragile"},
+    [Bomb]={"movable"}
   })
 
   for i=1,w do
@@ -70,7 +77,9 @@ function new_level(i)
       local p = Legend[here]
 
       if p then
-        local e = map:set(i+1,j+1,p[1],p[2])
+        local t = p[2]
+        if t==-1 then t=tint end
+        local e = map:set(i+1,j+1,p[1],t)
         if here=="@" then
           player = e
         end
@@ -90,11 +99,12 @@ function new_level(i)
 end
 
 function Cart:START()
-  FIELD(1,Redge.stop,"Plays","",2,0)
-  FIELD(2,0x1f3c6,"High score","",3,0)
-  FIELD(3,nil,"How to play","Collect Arrow_sprites and explode the ogre")
-  FIELD(4,nil,"Credits","IDEALsoft 19828")
-  FIELD(5,nil,"Inspired by","C64 Saracen")
+  FIELD(1,Redge.stop,"Best level","Never played",3)
+  FIELD(2,nil,"Completions","Not completed",2)
+  FIELD(3,SPRCODE("TROPHY"),"Highest score","Not completed",3)
+  FIELD(4,SPRCODE("STOPWATCH"),"Fastest time","Not completed",4)
+  FIELD(5,nil,"Credits","IDEALsoft 19828")
+  FIELD(6,nil,"Inspired by","C64 Saracen")
   GO(Menu)
 end
 
@@ -129,19 +139,22 @@ function wigwag() return FLR(T/8)%2 end
 
 function Main:START()
   local state = LOAD()
+  LOG("Loaded state",state)
   level = state[1] or 1
   score = state[2] or 0
+  LOG("Starting level",level)
+  POST(1,level)
   player = new_level(level)
   restart_button = ENT(W/2,S,S,SPRCODE("LEFTWARDS ARROW WITH HOOK"))
   arrows = LOOP()
+  explosions = LOOP()
   TIMER(60)
 end
 
 function draw_scene()
   DRAW(map)
-  for a in ITEMS(arrows) do
-    DRAW(a)
-  end
+  DRAW(arrows)
+  DRAW(explosions)
 end
 
 function draw_state()
@@ -162,16 +175,9 @@ function Main:DRAW()
   draw_state()
 end
 
-function kill_arrow(a)
-  LOG("Removing",a,"from",arrows)
-  arrows:remove(a)
-  if a.from_player then
-    LOG("player's arrow died.")
-  end
-end
-
 function arrow_hit(here,a)
-  LOG("Arrow",a,"hit",here)
+  --LOG("Arrow",a,"hit",here)
+
   if here==player then
     if a.from_player then return end
     GO(Over)
@@ -186,34 +192,68 @@ function arrow_hit(here,a)
     arrows:add(ENT(x,y,S,Arrow_sprites.right,0):speed(Shoot_speed,0))
     arrows:add(ENT(x,y,S,Arrow_sprites.up,0):speed(0,-Shoot_speed))
     arrows:add(ENT(x,y,S,Arrow_sprites.down,0):speed(0,Shoot_speed))
-    kill_arrow(a)
+    return
+  end
+
+  arrows:remove(a)
+
+  if IS(here,Bomb) then
+    LOG("Arrow",a,"hit a bomb.")
+    arrows:remove(a)
+    for bx=-1,1 do
+      for by=-1,1 do
+        local e = ENT(x+bx*S,y+by*S,S,Explosion)
+        e.age = 15
+        explosions:add(e)
+      end
+    end
+    return
+  end
+
+  if IS(here,"fragile") then
+    map:free(here)
+  end
+
+  if IS(here,"edible") then
+    score = score - 100
+  end
+end
+
+function explode(here)
+  if here==player then
+    LOG("Player was exploded.")
+    GO(Over)
+    return
+  end
+
+  if IS(here,Ogre) then
+    LOG("Ogre was exploded.")
+    map:free(here)
+    SAVE(level,score)
+    GO(WinLevel)
     return
   end
 
   if IS(here,Bomb) then
-    LOG("Arrow",a,"hit a bomb.")
-    kill_arrow(a)
+    LOG("Bomb was exploded.")
+    local b = map:free(here)
+    for ox=-1,1 do
+      for oy=-1,1 do
+        local e = ENT(b.x+ox*S,b.y+oy*S,S,Explosion)
+        e.age = 20
+        explosions:add(e)
+      end
+    end
     return
   end
 
-  if IS(here,"arrow") then
-    LOG("Arrow",a,"hit an arrow.")
+  if IS(here,"fragile") then
     map:free(here)
-    kill_arrow(a)
-    return
   end
 
-  if IS(here,fruit) then
-    LOG("Arrow",a,"hit a fruit.")
+  if IS(here,"edible") then
     score = score - 100
-    map:free(here)
-    kill_arrow(a)
-    return
   end
-
-  LOG("Arrow",a,"hit a ",here.spr)
-  kill_arrow(a)
-  return
 end
 
 function Main:UPDATE()
@@ -223,12 +263,25 @@ function Main:UPDATE()
 
     if a:oob() then
       LOG("oob",a)
-      kill_arrow(a)
+      arrows:remove(a)
     end
 
     local here = map:under(a)
     if here then
       arrow_hit(here,a)
+    end
+  end
+  for e in ITEMS(explosions) do
+    e:step()
+    e.age = e.age - 1
+    if e.age<=10 then
+      local here = map:under(e)
+      if here then
+        explode(here)
+      end
+    end
+    if e.age<=0 then
+      explosions:remove(e)
     end
   end
 end
@@ -309,24 +362,69 @@ function Over:START()
   local state = LOAD()
   level = state[1] or 1
   score = state[2] or 0
-  POST(1,1)
-  POST(2,score)
 end
 
 function Over:DRAW()
   BORDER(8)
   CLS()
   COLOUR(0)
-  TITLE("GAME", W/2, H/2, 0, 0)
-  TITLE("OVER", W/2, H/2+S, 0, 0)
+  TITLE("OOPS", W/2, H/2, 0, 0)
   COLOUR(8)
-  PRINT("level "..score, W/2, H/2+S*3, 0, 0)
-  PRINT("score "..level, W/2, H/2+S*4, 0, 0)
+  PRINT("level "..level, W/2, H/2+S*3, 0, 0)
+  PRINT("score "..score, W/2, H/2+S*4, 0, 0)
   DRAWFIELD(2,H-S*2)
 end
 
-function Over:TOUCH(x,y)
+function Over:RELEASE(x,y)
   RESTART()
 end
+
+------------------------------------------------------------------- level clear
+
+WinLevel = MODE("Win level")
+
+function WinLevel:START()
+  local state = LOAD()
+  level = (state[1] and state[1]+1) or 2
+  score = state[2] or 0
+  player = ENT(W/2,H/4,S,Redge.left)
+  ANIMATE(player,function() return (T/5)%8 end)
+  if Plans[level] then
+    SAVE(level,score)
+  else
+    -- end of the game
+    POST(2,1)
+    POST(3,score)
+    level = nil
+    SAVE()
+  end
+end
+
+function WinLevel:DRAW()
+  BORDER(8)
+  CLS()
+  if level then
+    COLOUR(0)
+    TITLE("LEVEL "..level, W/2, H/2, 0, 0)
+  else
+    TWINKLE()
+    TITLE("VICTORY", W/2, H/2, 0, 0)
+    COLOUR(0)
+    DRAW(player)
+  end
+  COLOUR(8)
+  PRINT("score "..score, W/2, H/2+S*4, 0, 0)
+  DRAWFIELD(2,H-S*2)
+end
+
+function WinLevel:RELEASE(x,y)
+  if level then
+    GO(Main)
+  else
+    RESTART()
+  end
+end
+
+------------------------------------------------------------------- victory
 
 return Cart

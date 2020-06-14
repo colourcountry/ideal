@@ -61,6 +61,7 @@ end
 
 function ent:ANIMATE(f)
   self.anim = f
+  return self
 end
 
 function ent:DRAW()
@@ -68,7 +69,7 @@ function ent:DRAW()
     sys.api.COLOUR(self.c)
   end
   if self.anim then
-    sys.api.SPR(self.spr+self.anim(), self.x, self.y)
+    sys.api.SPR(self.spr+math.floor(self.anim()), self.x, self.y)
   else
     sys.api.SPR(self.spr, self.x, self.y)
   end

@@ -21,7 +21,7 @@ function loop:add(x,limit)
     self.ritems={[x]=1}
     self.length=1
     self.top=2
-    api.LOG("Added first item, now",self)
+    --api.LOG("Added first item, now",self)
     return
   end
   self.items[self.top] = x
@@ -34,7 +34,7 @@ function loop:add(x,limit)
   self.length = self.length + 1
   self.top = self.top + 1
 
-  api.LOG("Added item, now",self)
+  --api.LOG("Added item, now",self)
 
   if limit and self.length>limit then
     return self:rot()

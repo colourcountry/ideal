@@ -9,7 +9,7 @@ Main = MODE("Main")
 function Main:START(secrets)
   if secrets then
     cart = secrets.cart
-    memory = secrets.memory[cart.id]
+    memory = secrets.memory[cart.id].fields
     switch_cart = secrets.switch_cart
     draw_field = secrets.draw_field
   end

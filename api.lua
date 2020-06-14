@@ -367,7 +367,10 @@ function api.LOOP()
   local o = {
     length=0
   }
-  setmetatable(o, {__index=loop})
+  setmetatable(o, {
+    __index=loop,
+    __len=function() return loop.length end
+  })
   return o
 end
 
@@ -445,7 +448,7 @@ function draw_field(item,y,include_desc)
   end
   api.COLOUR(13)
   api.PRINT(item.name,margin+text_indent,y,1,-1)
-  if include_desc and item.desc and item.desc~="" then
+  if item.desc and item.desc~="" and include_desc and not item.value then
     local lines = api.SPLIT(api.STR(item.desc),text_width/api.L," ")
     api.COLOUR(8)
     api.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
@@ -469,13 +472,16 @@ end
 
 function api.FIELD(loc,icon,name,desc,rule,init_value)
   if not memory[cur_cartid] then memory[cur_cartid] = {} end
-  if memory[cur_cartid][loc] then
-    api.LOG("Retaining existing value ",memory[cur_cartid][loc].value," for ",name)
-    memory[cur_cartid][loc].name=name
-    memory[cur_cartid][loc].desc=desc
-    memory[cur_cartid][loc].icon=icon
+  if not memory[cur_cartid].fields then memory[cur_cartid].fields = {} end
+
+  local field = memory[cur_cartid].fields[loc]
+  if field then
+    api.LOG("Retaining existing value ",field.value," for ",name)
+    field.name=name
+    field.desc=desc
+    field.icon=icon
   else
-    memory[cur_cartid][loc] = { rule=rule, value=init_value, name=name, desc=desc, icon=icon }
+    memory[cur_cartid].fields[loc] = { rule=rule, value=init_value, name=name, desc=desc, icon=icon }
   end
   save_memory(cur_cartid)
   return loc
@@ -506,15 +512,15 @@ function validate_state(v)
       end
     end
   end
-  api.LOG("Saving strings as ",s)
+  api.LOG("Saving state as ",s)
   return s
 end
 
 postrules = { -- FIXME: nicer way to specify the rule?
   function(old,new) return new end,
-  function(old,new) return old+new end,
-  function(old,new) return math.max(old,new) end,
-  function(old,new) return math.min(old,new) end,
+  function(old,new) return (old and old+new) or new end,
+  function(old,new) return (old and math.max(old,new)) or new end,
+  function(old,new) return (old and math.min(old,new)) or new end,
 }
 
 function api.POST(loc,value)
@@ -522,26 +528,39 @@ function api.POST(loc,value)
   if loc==0 then
     safe_value = validate_state(value)
     if not memory[cur_cartid] then memory[cur_cartid] = {} end
-    memory[cur_cartid][0] = safe_value
+    memory[cur_cartid].state = safe_value
     api.LOG("...memory now",memory[cur_cartid])
+    save_memory(cur_cartid)
     return
   end
   if not memory[cur_cartid] then api.ERROR("POST to undefined cart "..cur_cartid) return end
-  if not memory[cur_cartid][loc] then
+  local field = memory[cur_cartid].fields and memory[cur_cartid].fields[loc]
+  if not field then
     api.LOG("...memory was",memory[cur_cartid])
     api.ERROR("POST to undefined field "..loc)
     return
   end
-  local rule = postrules[memory[cur_cartid][loc].rule or 1]
-  memory[cur_cartid][loc].value = rule(memory[cur_cartid][loc].value,value)
+  local rule = postrules[field.rule or 1]
+  field.value = rule(field.value,value)
   api.LOG("...memory now",memory[cur_cartid])
   save_memory(cur_cartid)
 end
 
 function api.LOAD()
-  local r = memory[cur_cartid] and memory[cur_cartid][0] and memory[cur_cartid][0].value
-  api.LOG("Loaded state ",value)
+  local r = memory[cur_cartid] and memory[cur_cartid].state
+  api.LOG("Loaded state ",r)
   return r or {}
+end
+
+function api.SAVE(...)
+  if not memory[cur_cartid] then memory[cur_cartid] = {} end
+  local s = {...}
+  if #s==0 then
+    memory[cur_cartid].state = nil -- json library doesn't like empty arrays
+  else
+    memory[cur_cartid].state = s
+  end
+  save_memory(cur_cartid)
 end
 
 function api.TIMER(s)

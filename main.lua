@@ -13,7 +13,7 @@ function love.load()
 
     love.filesystem.createDirectory("memory")
     local path = "memory/"..cartid
-    sys.api.LOG(path,": writing file")
+    sys.api.LOG(path,": writing JSON",j)
     love.filesystem.write(path,j)
   end
 
