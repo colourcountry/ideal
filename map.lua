@@ -214,7 +214,7 @@ function map:free(e)
     e.x = e.x - self.cx
     e.y = e.y - self.cy
   end
-  api.LOG("Freed",e,"from",mx,my)
+  --api.LOG("Freed",e,"from",mx,my)
   return e
 end
 
@@ -222,7 +222,7 @@ function map:centre(x,y)
   local hs = S/2
   self.cx = (self.sx+2)*hs-x-hs
   self.cy = (self.sy+2)*hs-y-hs
-  api.LOG("Centred map on ",x,",",y," origin now ",self.cx,",",self.cy)
+  --api.LOG("Centred map on ",x,",",y," origin now ",self.cx,",",self.cy)
 end
 
 function map:collides(e)

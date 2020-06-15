@@ -43,7 +43,7 @@ function loop:add(x,limit)
 end
 
 function loop:LOG()
-  local s = "Loop of "..tostring(self.length)..": "..tostring(self.first).."="..tostring(self.items and self.items[self.first] and self.items[self.first].id).."; "
+  local s = "Loop of "..tostring(#self)..": "..tostring(self.first).."="..tostring(self.items and self.items[self.first] and self.items[self.first].id).."; "
   local i = self.path[self.first]
   local b = 0
   while i ~= self.first do

@@ -369,7 +369,6 @@ function api.LOOP()
   }
   setmetatable(o, {
     __index=loop,
-    __len=function() return loop.length end
   })
   return o
 end
@@ -529,26 +528,26 @@ function api.POST(loc,value)
     safe_value = validate_state(value)
     if not memory[cur_cartid] then memory[cur_cartid] = {} end
     memory[cur_cartid].state = safe_value
-    api.LOG("...memory now",memory[cur_cartid])
+    --api.LOG("...memory now",memory[cur_cartid])
     save_memory(cur_cartid)
     return
   end
   if not memory[cur_cartid] then api.ERROR("POST to undefined cart "..cur_cartid) return end
   local field = memory[cur_cartid].fields and memory[cur_cartid].fields[loc]
   if not field then
-    api.LOG("...memory was",memory[cur_cartid])
+    --api.LOG("...memory was",memory[cur_cartid])
     api.ERROR("POST to undefined field "..loc)
     return
   end
   local rule = postrules[field.rule or 1]
   field.value = rule(field.value,value)
-  api.LOG("...memory now",memory[cur_cartid])
+  --api.LOG("...memory now",memory[cur_cartid])
   save_memory(cur_cartid)
 end
 
 function api.LOAD()
   local r = memory[cur_cartid] and memory[cur_cartid].state
-  api.LOG("Loaded state ",r)
+  --api.LOG("Loaded state ",r)
   return r or {}
 end
 

@@ -27,30 +27,61 @@ Explosion = SPRCODE("COLLISION SYMBOL")
 
 Legend = {
   ["b"]={Bomb,0},
-  ["m"]={Ogre,8},
-  ["o"]={Fruit,0},
+  ["o"]={Ogre,8},
+  ["f"]={Fruit,0},
   ["<"]={Arrow_sprites.left,3},
   ["^"]={Arrow_sprites.up,3},
   [">"]={Arrow_sprites.right,3},
   ["v"]={Arrow_sprites.down,3},
-  ["#"]={SPRCODE("brick wall face"),-1},
+  ["T"]={SPRCODE("brick wall top"),-1},
+  ["|"]={SPRCODE("brick wall"),-1},
   ["@"]={Redge.stop,0},
 }
 
 Plans = {
   {
-    "@>  m o",
-    "<  b   ",
+    "@    ",
+    " b o ",
+    "   v ",
   },
   {
-    ">v# b ",
-    "@ #m b",
-    "^ #  b",
-    "^bbbbb",
+    "@>  <o",
+    "  b   ",
+    "   of "
+  },
+  {
+    "o   ^ ",
+    "@ b bb",
+    "  b o ",
+    "o   vf",
+  },
+  {
+    " b ^f>",
+    " < b  ",
+    " ^ <  ",
+    "@  ^bf",
+    " b > o",
+  },
+  {
+    " ^ v ",
+    " o o ",
+    "     ",
+    "bTTTb",
+    "  b  ",
+    "o   @",
+  },
+  {
+    "b b o",
+    " @ < ",
+    "b b<b",
+    " v   ",
+    "bvb<b",
+    "  v  ",
+    "b b b",
   },
 }
 
-Shoot_speed = 2
+shoot_speed = 1
 Carry_slot = { W/2, H-S }
 
 function new_level(i)
@@ -71,6 +102,8 @@ function new_level(i)
     [Bomb]={"movable"}
   })
 
+  ogres = LOOP()
+
   for i=1,w do
     for j=1,h do
       local here = CHARAT(plan[j],i)
@@ -83,10 +116,13 @@ function new_level(i)
         if here=="@" then
           player = e
         end
+        if here=="o" then
+          ogres:add(e)
+        end
       end
     end
-    map:set(i+1,1,SPRCODE("brick wall face"),tint)
-    map:set(i+1,h+2,SPRCODE("brick wall face"),tint)
+    map:set(i+1,1,SPRCODE("brick wall top"),tint)
+    map:set(i+1,h+2,SPRCODE("brick wall top"),tint)
   end
 
   for j=1,h+2 do
@@ -100,9 +136,9 @@ end
 
 function Cart:START()
   FIELD(1,Redge.stop,"Best level","Never played",3)
-  FIELD(2,nil,"Completions","Not completed",2)
-  FIELD(3,SPRCODE("TROPHY"),"Highest score","Not completed",3)
-  FIELD(4,SPRCODE("STOPWATCH"),"Fastest time","Not completed",4)
+  FIELD(2,SPRCODE("TROPHY"),"Completions","Not completed",2)
+  FIELD(3,SPRCODE("CHERRIES"),"Best score","Not completed",3)
+  FIELD(4,SPRCODE("PILE OF POO"),"Fewest faults","Not completed",4)
   FIELD(5,nil,"Credits","IDEALsoft 19828")
   FIELD(6,nil,"Inspired by","C64 Saracen")
   GO(Menu)
@@ -142,7 +178,7 @@ function Main:START()
   LOG("Loaded state",state)
   level = state[1] or 1
   score = state[2] or 0
-  LOG("Starting level",level)
+  faults = state[3] or 0
   POST(1,level)
   player = new_level(level)
   restart_button = ENT(W/2,S,S,SPRCODE("LEFTWARDS ARROW WITH HOOK"))
@@ -151,6 +187,8 @@ function Main:START()
   TIMER(60)
 end
 
+------------------------------------------------------------------- main:draw
+
 function draw_scene()
   DRAW(map)
   DRAW(arrows)
@@ -158,9 +196,10 @@ function draw_scene()
 end
 
 function draw_state()
-  COLOUR(7)
+  COLOUR(4)
   PRINT(score, W/4, L, 0, 0)
-  PRINT(TIMER(), 3*W/4, L, 0, 0)
+  COLOUR(1)
+  PRINT(faults, 3*W/4, L, 0, 0)
   DRAW(restart_button)
   if player_carrying then
     DRAW(player_carrying)
@@ -175,23 +214,42 @@ function Main:DRAW()
   draw_state()
 end
 
+------------------------------------------------------------------- main:update
+
+function player_shoot()
+  local player_shooting = player_carrying:moveto(player.x-map.cx,player.y-map.cy)
+  arrows:add(player_shooting)
+  player_shooting.from_player = true
+  player_carrying = nil
+  if IS(player_shooting,Arrow_sprites.left) then player_shooting:speed(-shoot_speed,0) return end
+  if IS(player_shooting,Arrow_sprites.up) then player_shooting.dy = -shoot_speed return end
+  if IS(player_shooting,Arrow_sprites.right) then player_shooting.dx = shoot_speed return end
+  if IS(player_shooting,Arrow_sprites.down) then player_shooting.dy = shoot_speed return end
+  ERROR("bad assertion","player tried to shoot a weird object",player_shooting)
+end
+
+function ogre_shoot(ogre)
+  local x, y = map:whereis(ogre)
+  arrows:add(ENT(x,y,S,Arrow_sprites.left,0):speed(-shoot_speed,0))
+  arrows:add(ENT(x,y,S,Arrow_sprites.right,0):speed(shoot_speed,0))
+  arrows:add(ENT(x,y,S,Arrow_sprites.up,0):speed(0,-shoot_speed))
+  arrows:add(ENT(x,y,S,Arrow_sprites.down,0):speed(0,shoot_speed))
+end
+
 function arrow_hit(here,a)
   --LOG("Arrow",a,"hit",here)
 
   if here==player then
     if a.from_player then return end
+    LOG("Player was shot by an ogre.")
     GO(Over)
   end
 
-  local x, y = map:whereis(here)
 
   if IS(here,Ogre) then
     LOG("Arrow",i,"hit an ogre.")
     if not a.from_player then return end
-    arrows:add(ENT(x,y,S,Arrow_sprites.left,0):speed(-Shoot_speed,0))
-    arrows:add(ENT(x,y,S,Arrow_sprites.right,0):speed(Shoot_speed,0))
-    arrows:add(ENT(x,y,S,Arrow_sprites.up,0):speed(0,-Shoot_speed))
-    arrows:add(ENT(x,y,S,Arrow_sprites.down,0):speed(0,Shoot_speed))
+    ogre_shoot(here)
     return
   end
 
@@ -199,6 +257,7 @@ function arrow_hit(here,a)
 
   if IS(here,Bomb) then
     LOG("Arrow",a,"hit a bomb.")
+    local x, y = map:whereis(here)
     arrows:remove(a)
     for bx=-1,1 do
       for by=-1,1 do
@@ -211,12 +270,21 @@ function arrow_hit(here,a)
   end
 
   if IS(here,"fragile") then
+    LOG("Fragile entity",here.id,here.spr,"was shot, 1 fault.")
+    faults = faults + 1 -- 2 if it's yours
     map:free(here)
   end
 
   if IS(here,"edible") then
-    score = score - 100
+    LOG("Edible entity",here.id,here.spr,"was shot, 3 fault.")
+    faults = faults + 3 -- 5 if it's yours
   end
+
+  if a.from_player then
+    LOG("Wasted a shot, 1 fault.")
+    faults = faults + 1 -- wasted an arrow
+  end
+
 end
 
 function explode(here)
@@ -227,15 +295,18 @@ function explode(here)
   end
 
   if IS(here,Ogre) then
-    LOG("Ogre was exploded.")
     map:free(here)
-    SAVE(level,score)
-    GO(WinLevel)
+    ogres:remove(here)
+    LOG("Ogre was exploded, now ",ogres)
+    for o in ITEMS(ogres) do
+      ogre_shoot(o) -- enrage other ogres
+    end
     return
   end
 
   if IS(here,Bomb) then
-    LOG("Bomb was exploded.")
+    LOG("Bomb was exploded, 5 points.")
+    score = score + 5
     local b = map:free(here)
     for ox=-1,1 do
       for oy=-1,1 do
@@ -248,15 +319,36 @@ function explode(here)
   end
 
   if IS(here,"fragile") then
+    LOG("Fragile entity",here.id,here.spr,"was exploded, 5 faults.")
+    faults = faults + 5
     map:free(here)
   end
 
   if IS(here,"edible") then
-    score = score - 100
+    LOG("Edible entity",here.id,here.spr,"was exploded, 5 faults.")
+    faults = faults + 5 -- 10 overall because fragile
   end
+
+end
+
+function move(dx,dy)
+  map:move(player,dx,dy,10)
+  ANIMATE(player,wigwag)
+  if dx<0 then player.spr=Redge.left return end
+  if dx>0 then player.spr=Redge.right return
+  end
+  if dy<0 then player.spr=Redge.up return end
+  if dy>0 then player.spr=Redge.down return end
+  player.spr=Redge.stop
 end
 
 function Main:UPDATE()
+  if ogres.length==0 and arrows.length==0 and explosions.length==0 then
+    SAVE(level,score,faults)
+    GO(WinLevel)
+    return
+  end
+
   map:UPDATE()
   for a in ITEMS(arrows) do
     a:step()
@@ -286,22 +378,14 @@ function Main:UPDATE()
   end
 end
 
-function Shoot(e)
-  local player_shooting = player_carrying:moveto(player.x-map.cx,player.y-map.cy)
-  arrows:add(player_shooting)
-  player_shooting.from_player = true
-  player_carrying = nil
-  if IS(player_shooting,Arrow_sprites.left) then player_shooting:speed(-Shoot_speed,0) return end
-  if IS(player_shooting,Arrow_sprites.up) then player_shooting.dy = -Shoot_speed return end
-  if IS(player_shooting,Arrow_sprites.right) then player_shooting.dx = Shoot_speed return end
-  if IS(player_shooting,Arrow_sprites.down) then player_shooting.dy = Shoot_speed return end
-  ERROR("bad assertion","player tried to shoot a weird object",player_shooting)
-end
-
 function Main:DRAG(ox, oy, x, y)
   if (not player.busy) and player_carrying and player_carrying:near(x,y,L) then
-    Shoot(player_carrying)
+    player_shoot()
     player.busy = true -- don't move until release
+  end
+
+  if restart_button:near(x,y,L) then
+    player.busy = true
   end
 
   if player.moving or player.busy then return end
@@ -317,31 +401,31 @@ function Main:DRAG(ox, oy, x, y)
   end
 
   if IS(neighbour,"edible") then
-    score = score + 50
+    LOG("Om nom nom, 10 points.")
+    score = score + 10
     move(dx,dy)
     return
   end
 
   if IS(neighbour,"arrow") and not player_carrying then
-    score = score + 10
     map:free(neighbour):moveto(Carry_slot[1], Carry_slot[2])
     player_carrying = neighbour
     move(dx,dy)
     return
   end
 
-  player.spr=Redge.stop -- solid
-end
+  if IS(neighbour,"movable") then
+    if map:oob(player.mx+2*dx,player.my+2*dy) then return end
 
-function move(dx,dy)
-  map:move(player,dx,dy,10)
-  ANIMATE(player,wigwag)
-  if dx<0 then player.spr=Redge.left return end
-  if dx>0 then player.spr=Redge.right return
+    local space = map:get(player.mx+2*dx,player.my+2*dy)
+    if space then return end
+
+    map:move(neighbour,dx,dy,5)
+    move(dx,dy)
+    return
   end
-  if dy<0 then player.spr=Redge.up return end
-  if dy>0 then player.spr=Redge.down return end
-  player.spr=Redge.stop
+
+  player.spr=Redge.stop -- solid
 end
 
 function Main:RELEASE(x, y)
@@ -350,6 +434,8 @@ function Main:RELEASE(x, y)
   player.busy = false
 
   if restart_button:near(x,y,L) then
+    faults = faults + 1
+    SAVE(level,score,faults)
     GO(Main)
   end
 end
@@ -362,6 +448,8 @@ function Over:START()
   local state = LOAD()
   level = state[1] or 1
   score = state[2] or 0
+  faults = (state[3] and state[3]+1) or 1
+  SAVE(level,score,faults)
 end
 
 function Over:DRAW()
@@ -372,6 +460,7 @@ function Over:DRAW()
   COLOUR(8)
   PRINT("level "..level, W/2, H/2+S*3, 0, 0)
   PRINT("score "..score, W/2, H/2+S*4, 0, 0)
+  PRINT("faults "..faults, W/2, H/2+S*5, 0, 0)
   DRAWFIELD(2,H-S*2)
 end
 
@@ -387,14 +476,16 @@ function WinLevel:START()
   local state = LOAD()
   level = (state[1] and state[1]+1) or 2
   score = state[2] or 0
+  faults = state[3] or 0
   player = ENT(W/2,H/4,S,Redge.left)
   ANIMATE(player,function() return (T/5)%8 end)
   if Plans[level] then
-    SAVE(level,score)
+    SAVE(level,score,faults)
   else
     -- end of the game
     POST(2,1)
     POST(3,score)
+    POST(4,faults)
     level = nil
     SAVE()
   end
@@ -414,6 +505,7 @@ function WinLevel:DRAW()
   end
   COLOUR(8)
   PRINT("score "..score, W/2, H/2+S*4, 0, 0)
+  PRINT("faults "..faults, W/2, H/2+S*5, 0, 0)
   DRAWFIELD(2,H-S*2)
 end
 
