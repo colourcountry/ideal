@@ -6,4 +6,4 @@ then
   exit 1
 fi
 
-rm -v ~/.local/share/love/data/memory/$(basename "$1")
+rm -v ~/.local/share/love/ideal-5/memory/$(basename "$1")

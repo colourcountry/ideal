@@ -50,13 +50,13 @@ end
 
 function sugar.SHUFFLE(array)
   for i=1,#array-1 do
-    local j = RND(i,#array)
+    local j = api.RND(i,#array)
     array[i], array[j] = array[j], array[i]
   end
 end
 
 function sugar.CHOOSE(array)
-    return array[RND(1,#array)]
+    return array[api.RND(1,#array)]
 end
 
 -------------------------------------------------------------------- Object "methods"

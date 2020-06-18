@@ -19,8 +19,8 @@ sprites = {
   names=require("atlas/names")
 }
 
-api = require("api")     -- Commands that proxy or use inaccessible Love/Lua functions
-sugar = require("sugar") -- Commands that could be done in the cart but are very common
+api = require("sys/api")     -- Commands that proxy or use inaccessible Love/Lua functions
+sugar = require("sys/sugar") -- Commands that could be done in the cart but are very common
 
 carts={}
 memory={}
@@ -53,7 +53,7 @@ for k, file in ipairs(files) do
    end
 end
 
-colours = require("colours")
+colours = require("sys/colours")
 white = colours[0]
 
 cur_fg = colours[8]

@@ -1,9 +1,8 @@
 -- TODO detect installed carts somehow
 
 function love.load()
-  -- Load the main console API.
-  json = require("json")
-  sys = require("system")
+  require("json/json") -- this uses the old module() way of working
+  sys = require("sys/system")
 
   function save_memory(cartid)
     if not sys.memory[cartid] then

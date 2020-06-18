@@ -353,7 +353,7 @@ end
 
 entid = 1
 function api.ENT(x, y, r, spr, c, flags)
-  local ent = require("ent")
+  local ent = require("lib/ent")
 
   if not flags then flags={} end
   -- add the original sprite and its name to flags,
@@ -381,7 +381,7 @@ function api.IS(e,k)
 end
 
 function api.LOOP()
-  local loop = require("loop")
+  local loop = require("lib/loop")
   local o = {
     length=0
   }
@@ -393,7 +393,7 @@ end
 
 mapid = 1
 function api.MAP(flags)
-  local map = require("map")
+  local map = require("lib/map")
   local flagsets = {}
   if flags then
     for k,f in pairs(flags) do
@@ -414,7 +414,7 @@ function api.MAP(flags)
 end
 
 function api.MENU(items)
-  local menu = require("menu")
+  local menu = require("lib/menu")
   local o = {
     items=items
   }
@@ -427,7 +427,7 @@ spr_info = api.SPRCODE("CIRCLED INFORMATION SOURCE")
 spr_eject = api.SPRCODE("EJECT SYMBOL")
 
 function api.MODE(name,parent)
-  local mode = require("mode")
+  local mode = require("lib/mode")
   o = { name=name, parent=parent }
   if (o.parent) then
     setmetatable(o, {__index=o.parent})
