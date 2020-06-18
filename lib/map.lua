@@ -46,8 +46,9 @@ function map:DRAW()
   self.canvas:start()
   api.CLS()
   for e in self:ITEMS() do
-    draw_with_text(e,text_colour)
+    e:DRAW()
   end
+  --[[ FIXME do I still want this
   if self.hx and self.hy then
     api.COLOUR(1)
     api.CIRCLE(self.hx*S,self.hy*S,8)
@@ -62,7 +63,9 @@ function map:DRAW()
     api.COLOUR(5)
     api.RECT(self.zx*S-8,self.zy*S-8,self.zw*S,self.zh*S)
   end
+  ]]
   self.canvas:stop()
+  api.COLOUR(0)
   self.canvas:paste(-self.cx,-self.cy)
 end
 

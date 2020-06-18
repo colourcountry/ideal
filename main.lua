@@ -10,9 +10,9 @@ function love.load()
     end
     local j = json.encode(memory[cartid])
 
-    love.filesystem.createDirectory("memory")
+    love.filesystem.createDirectory("memory/user") -- FIXME: allow other dirs to create memory
     local path = "memory/"..cartid
-    --api.LOG(path,": writing JSON",j)
+    api.LOG(path,": writing memory",j)
     love.filesystem.write(path,j)
   end
 

@@ -19,15 +19,15 @@ Bomb = SPRCODE("BOMB")
 Explosion = SPRCODE("COLLISION SYMBOL")
 
 Legend = {
-  ["b"]={Bomb,0},
-  ["o"]={Ogre,8},
+  ["b"]={Bomb,1},
+  ["o"]={Ogre,-5},
   ["f"]={Fruit,0},
   ["<"]={Arrow_sprites.left,3},
   ["^"]={Arrow_sprites.up,3},
   [">"]={Arrow_sprites.right,3},
   ["v"]={Arrow_sprites.down,3},
-  ["T"]={SPRCODE("brick wall top"),-1},
-  ["|"]={SPRCODE("brick wall"),-1},
+  ["T"]={SPRCODE("brick wall top"),-16},
+  ["|"]={SPRCODE("brick wall"),-16},
   ["@"]={Redge.stop,0},
 }
 
@@ -84,7 +84,7 @@ function new_level(i)
   local h = #plan
   local w = #plan[1]
   local player = nil
-  local tint = ((i+12)*3)%13
+  local tint = i*5
 
   map = MAP({
     [Arrow_sprites.left]={"arrow","fragile"},
@@ -103,11 +103,15 @@ function new_level(i)
       local p = Legend[here]
 
       if p then
-        local t = p[2]
-        if t==-1 then t=tint end
-        local e = map:put(p[1],i+1,j+1,t)
+        local c = p[2]
+        if c<0 then
+          c = tint+c
+        end
+
+        local e = map:put(p[1],i+1,j+1,c)
         if here=="@" then
           player = e
+          LOG(player)
         end
         if here=="o" then
           ogres:add(e)
@@ -173,6 +177,7 @@ end
 ------------------------------------------------------------------- main:draw
 
 function draw_scene()
+  COLOUR(0)
   DRAW(map)
   DRAW(arrows)
   DRAW(explosions)
