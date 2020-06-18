@@ -20,9 +20,23 @@ local api = {
   SORT=table.sort,
 }
 
+help = {
+  [api.MODEL]={api.MODEL},
+  [api.W]=[[The screen width, in pixels.
+
+  PRINT("Hello",W/2,0)
+]]
+}
+
 cur_x = 0
 cur_y = 0
 timer_end_time = false
+
+function api.HELP(obj)
+  local h=help[obj] or "No help for this."
+  api.LOG(h)
+  return h
+end
 
 function api.EXEC(chunk,chunkid)
    -- this is kind of horrible but works for the moment
@@ -57,7 +71,7 @@ function api.CHARAT(s,i)
 end
 
 function api.LOG(...)
-  s = tostring(api.T)..": "
+  local s = (api.T>0 and tostring(api.T)..": ") or ""
   for k,v in pairs({...}) do
     s = s..api.STR(v).." "
   end
@@ -65,7 +79,7 @@ function api.LOG(...)
 end
 
 function api.ITEMS(iterable)
-  if iterable.ITEMS then
+  if iterable.ITEMS and iterable~=api then
     return iterable:ITEMS()
   end
   return pairs(iterable)
@@ -265,11 +279,15 @@ function api.EJECT()
 end
 
 function api.ERROR(msg,...)
-  api.LOG("CART ERROR: ",msg,"! ",...)
-  error(msg)
+  if msg then
+    api.LOG("CART ERROR: ",msg,"! ",...)
+    error(msg)
+  else
+    love.event.quit()
+    return
+  end
   switch_cart("_error."..api.API, "Main", {
     msg=msg,
-    debug=cart_arg_found,
     quit=love.event.quit
   })
 end
@@ -575,5 +593,7 @@ function api.TIMER(s)
     return math.ceil(mode_end_time-now)
   end
 end
+
+api.KEYWORDS = api
 
 return api

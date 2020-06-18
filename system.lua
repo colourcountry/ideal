@@ -23,7 +23,6 @@ api = require("api")     -- Commands that proxy or use inaccessible Love/Lua fun
 sugar = require("sugar") -- Commands that could be done in the cart but are very common
 
 carts={}
-
 memory={}
 
 -- remind myself which globals i define further down
@@ -109,7 +108,6 @@ end
 canvas = new_canvas(api.W,api.H)
 
 function love.resize()
-  print("Resizing!")
   screenW,screenH = lg.getDimensions()
   print("Using screen dimensions ",screenW,"x",screenH)
   scale = math.min((screenW-20)/(canvas.w*units) , (screenH-20)/(canvas.h*units))

@@ -75,7 +75,6 @@ function love.load()
         icon=next(),
         extra=next()
       }
-      sys.api.LOG("indexed ",v,": ",sys.carts[v])
     end
   end
 
