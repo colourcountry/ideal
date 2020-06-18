@@ -1,5 +1,5 @@
 Cart = {
-  name="test_loop",
+  name="tests/test_loop",
   hidden=true,
   api="n83"
 }

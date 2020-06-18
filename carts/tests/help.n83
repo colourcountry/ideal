@@ -1,5 +1,5 @@
 Cart = {
-  name="tests:help",
+  name="tests/help",
   api="n83",
 }
 

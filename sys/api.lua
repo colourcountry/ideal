@@ -22,10 +22,16 @@ local api = {
 
 help = {
   [api.MODEL]={api.MODEL},
-  [api.W]=[[The screen width, in pixels.
-
-  PRINT("Hello",W/2,0)
-]]
+  [api.H]=[[The screen height, in graphics units.
+```
+PRINT("Left",H/2,0)
+```
+]],
+  [api.W]=[[The screen width, in graphics units.
+```
+PRINT("Top",W/2,0,0)
+```
+]],
 }
 
 cur_x = 0
@@ -65,6 +71,12 @@ function api.STR(o)
     return tostring(o)
   end
 end
+help[api.STR]=[[Convert an object to a string.
+```
+@ STR(5)
+"5"
+```
+]]
 
 function api.CHARAT(s,i)
   return s:sub(i,i) -- this is actually available to carts via string's metatable but i don't want to go there
@@ -434,8 +446,8 @@ function api.MODE(name,parent)
   else
     setmetatable(o, {__index=mode})
   end
-  o:init()
   cur_modes[o.name] = o
+  api.LOG("New mode",o.name)
   return o
 end
 

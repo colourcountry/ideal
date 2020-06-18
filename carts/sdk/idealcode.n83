@@ -1,0 +1,81 @@
+Cart = {
+  name="sdk/idealcode",
+  api="n83"
+}
+
+Main = MODE("Main")
+
+prompt = "  @ "
+
+shifted = { ["1"]="!", ["2"]='"', ["3"]="3", ["4"]="4", ["5"]="5", ["6"]="6",
+            ["7"]="7", ["8"]="*", ["9"]="(", ["0"]=")", ["-"]="-", ["="]="+",
+            ["q"]="Q", ["w"]="W", ["e"]="E", ["r"]="R", ["t"]="TITLE(", ["y"]="Y",
+            ["u"]="UPPER(", ["i"]="I", ["o"]="O", ["p"]="PRINT(", ["["]="{", ["]"]="}",
+            ["a"]="A", ["s"]="SPR(", ["d"]="D", ["f"]="function ", ["g"]="G", ["h"]="H",
+            ["j"]="J", ["k"]="K", ["l"]="LOWER(", [";"]=":", ["'"]="@", ["#"]="~",
+            ["z"]="Z", ["x"]="X", ["c"]="CEIL(", ["v"]="V", ["b"]="B", ["n"]="N",
+            ["m"]="M", [","]="<", ["."]=">", ["/"]="?",
+            ["space"]=" ", ["lalt"]=")" }
+
+shift_lock = false
+
+scroll_lines = FLR(H/L)
+
+function Main:START()
+  buffer = LOOP()
+  buffer:add("  IDEAL CODE 1.0.1")
+  buffer:add("  (C) 19828 IDEAL, INC.")
+  buffer:add("  READY")
+  buffer:add(prompt)
+end
+
+function Main:DRAW()
+  CLS()
+  COLOUR(10)
+  PRINTLINES(buffer,0,0,1,1)
+  if (shift_lock) then
+    COLOUR(8)
+    PRINT("SHIFT",W,H,-1,-1)
+  end
+end
+
+function Main:KEY(ch)
+  if (shifted[ch]) then
+    local last = buffer:pop() or prompt
+    if (shift_lock or #ch>1) then
+      ch = shifted[ch]
+    end
+    LOG(ch.." -> "..last..ch)
+    buffer:add(last..ch)
+    return
+  end
+  if (ch=="return") then
+    local last = buffer:peek()
+    if (#last>2) then
+      local code = MID(last,#prompt)
+      local parsed = EXEC(code)
+      if not parsed then
+        parsed = EXEC("return "..code)
+      end
+      if not parsed then
+        buffer:add("EH?",scroll_lines)
+      else
+        local result = parsed()
+        if result then
+          buffer:add(UPPER(STR(result)),scroll_lines)
+        end
+      end
+    end
+    buffer:add(prompt,scroll_lines)
+    return
+  end
+  if (ch=="lshift" or ch=="rshift") then
+    shift_lock = not shift_lock
+  end
+end
+
+function Cart:START()
+  GO(Main)
+end
+
+return Cart

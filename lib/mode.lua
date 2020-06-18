@@ -10,7 +10,4 @@ function mode:LOG()
   return "mode "..self.name..r
 end
 
-function mode:init()
-end
-
 return mode

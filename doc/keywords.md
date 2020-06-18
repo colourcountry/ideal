@@ -61,7 +61,11 @@ No help for this.
 No help for this. 
 
 ## H 
-No help for this. 
+The screen height, in graphics units.
+```
+PRINT("Left",H/2,0)
+```
+ 
 
 ## HELP 
 No help for this. 
@@ -172,7 +176,12 @@ No help for this.
 No help for this. 
 
 ## STR 
-No help for this. 
+Convert an object to a string.
+```
+@ STR(5)
+"5"
+```
+ 
 
 ## T 
 No help for this. 
@@ -193,7 +202,8 @@ No help for this.
 No help for this. 
 
 ## W 
-The screen width, in pixels.
-
-  PRINT("Hello",W/2,0)
+The screen width, in graphics units.
+```
+PRINT("Top",W/2,0,0)
+```
  

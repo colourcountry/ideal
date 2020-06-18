@@ -1,0 +1,23 @@
+Cart = {
+  name="tutorial/Tutorial-Part02-Hello",
+  api="n83"
+}
+
+M = MODE("M")
+
+function M:DRAW()
+  TWINKLE()
+  TITLE("IDEAL!",W/2,H/3,0,0)
+
+  COLOUR(0)
+  PRINT("Left",0,H/2)
+  PRINT("Top",W/2,0,0)
+  PRINT("Right",W,H/2,-1)
+  PRINT("Bottom",W/2,H,0,-1)
+end
+
+function Cart:START()
+  GO(M)
+end
+
+return Cart
