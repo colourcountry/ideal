@@ -1,5 +1,6 @@
 Cart = {
-  api="n83"
+  name="tests:help",
+  api="n83",
 }
 
 function Cart:START()
