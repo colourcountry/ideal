@@ -1,0 +1,5 @@
+return {
+  name="tutorial/Tutorial-Part01-Hello-oneline",
+  api="i5",
+  start=MODE("M",{DRAW=function() TITLE("IDEAL!",W/2,H/3,0,0) end})
+}

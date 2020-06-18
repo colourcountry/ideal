@@ -9,8 +9,16 @@ ent = {
     c=nil,
 }
 
+function ent:set(f)
+  if not f then return self end
+  for k,v in pairs(f) do
+    self.flags[k]=v
+  end
+  return self
+end
+
 local function oob(x, y, r)
-  if x<r or y<r or x>sys.api.W-r or y>sys.api.H-r then
+  if x<r or y<r or x>api.W-r or y>api.H-r then
     return true
   end
   return false
@@ -26,7 +34,7 @@ function ent:moveto(x,y,frames)
   return self
 end
 
-function ent:step()
+function ent:UPDATE()
   self.x = self.x + self.dx
   self.y = self.y + self.dy
   return self
@@ -66,12 +74,12 @@ end
 
 function ent:DRAW()
   if self.c then
-    sys.api.COLOUR(self.c)
+    api.COLOUR(self.c)
   end
   if self.anim then
-    sys.api.SPR(self.spr+math.floor(self.anim()), self.x, self.y)
+    api.SPR(self.spr+math.floor(self.anim()), self.x, self.y)
   else
-    sys.api.SPR(self.spr, self.x, self.y)
+    api.SPR(self.spr, self.x, self.y)
   end
 end
 

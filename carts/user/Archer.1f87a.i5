@@ -1,10 +1,3 @@
-Cart = {
-  name="Archer",
-  info="a puzzle game",
-  api="n83",
-  icon=SPRCODE("1/2 redgehog facing down"),
-}
-
 Redge = {
   stop=SPRCODE("1/2 redgehog facing down"),
   down=SPRCODE("1/2 redgehog moving down"),
@@ -81,7 +74,7 @@ Plans = {
   },
 }
 
-shoot_speed = 1
+shoot_speed = 3
 Carry_slot = { W/2, H-S }
 
 function new_level(i)
@@ -112,7 +105,7 @@ function new_level(i)
       if p then
         local t = p[2]
         if t==-1 then t=tint end
-        local e = map:set(i+1,j+1,p[1],t)
+        local e = map:put(p[1],i+1,j+1,t)
         if here=="@" then
           player = e
         end
@@ -121,27 +114,17 @@ function new_level(i)
         end
       end
     end
-    map:set(i+1,1,SPRCODE("brick wall top"),tint)
-    map:set(i+1,h+2,SPRCODE("brick wall top"),tint)
+    map:put(SPRCODE("brick wall top"),i+1,1,tint)
+    map:put(SPRCODE("brick wall top"),i+1,h+2,tint)
   end
 
   for j=1,h+2 do
-    map:set(1,j,SPRCODE("border right"),tint)
-    map:set(w+2,j,SPRCODE("border left"),tint)
+    map:put(SPRCODE("border right"),1,j,tint)
+    map:put(SPRCODE("border left"),w+2,j,tint)
   end
   map:centre(W/2,H/2)
 
   return player
-end
-
-function Cart:START()
-  FIELD(1,Redge.stop,"Best level","Never played",3)
-  FIELD(2,SPRCODE("TROPHY"),"Completions","Not completed",2)
-  FIELD(3,SPRCODE("CHERRIES"),"Best score","Not completed",3)
-  FIELD(4,SPRCODE("PILE OF POO"),"Fewest faults","Not completed",4)
-  FIELD(5,nil,"Credits","IDEALsoft 19828")
-  FIELD(6,nil,"Inspired by","C64 Saracen")
-  GO(Menu)
 end
 
 ------------------------------------------------------------------- menu
@@ -162,7 +145,7 @@ function Menu:DRAW()
   TWINKLE()
   BOX(L, L, W-2*L, 4*L)
   COLOUR(13)
-  TITLE(Cart.name, W/2, 3*L, 0, 0)
+  TITLE("Archer", W/2, 3*L, 0, 0)
   DRAWFIELD(2,S+6*L)
 end
 
@@ -171,7 +154,7 @@ end
 Main = MODE("Play")
 Main.icon = Ogre
 
-function wigwag() return FLR(T/8)%2 end
+function wigwag() return FLR(T/4)%2 end
 
 function Main:START()
   local state = LOAD()
@@ -181,7 +164,7 @@ function Main:START()
   faults = state[3] or 0
   POST(1,level)
   player = new_level(level)
-  restart_button = ENT(W/2,S,S,SPRCODE("LEFTWARDS ARROW WITH HOOK"))
+  restart_button = ENT(SPRCODE("LEFTWARDS ARROW WITH HOOK"),W/2,S)
   arrows = LOOP()
   explosions = LOOP()
   TIMER(60)
@@ -230,10 +213,10 @@ end
 
 function ogre_shoot(ogre)
   local x, y = map:whereis(ogre)
-  arrows:add(ENT(x,y,S,Arrow_sprites.left,0):speed(-shoot_speed,0))
-  arrows:add(ENT(x,y,S,Arrow_sprites.right,0):speed(shoot_speed,0))
-  arrows:add(ENT(x,y,S,Arrow_sprites.up,0):speed(0,-shoot_speed))
-  arrows:add(ENT(x,y,S,Arrow_sprites.down,0):speed(0,shoot_speed))
+  arrows:add(ENT(Arrow_sprites.left,x,y,0):speed(-shoot_speed,0))
+  arrows:add(ENT(Arrow_sprites.up,x,y,0):speed(0,-shoot_speed))
+  arrows:add(ENT(Arrow_sprites.right,x,y,0):speed(shoot_speed,0))
+  arrows:add(ENT(Arrow_sprites.down,x,y,0):speed(0,shoot_speed))
 end
 
 function arrow_hit(here,a)
@@ -261,7 +244,7 @@ function arrow_hit(here,a)
     arrows:remove(a)
     for bx=-1,1 do
       for by=-1,1 do
-        local e = ENT(x+bx*S,y+by*S,S,Explosion)
+        local e = ENT(Explosion,x+bx*S,y+by*S)
         e.age = 15
         explosions:add(e)
       end
@@ -310,7 +293,7 @@ function explode(here)
     local b = map:free(here)
     for ox=-1,1 do
       for oy=-1,1 do
-        local e = ENT(b.x+ox*S,b.y+oy*S,S,Explosion)
+        local e = ENT(Explosion,b.x+ox*S,b.y+oy*S)
         e.age = 20
         explosions:add(e)
       end
@@ -332,7 +315,7 @@ function explode(here)
 end
 
 function move(dx,dy)
-  map:move(player,dx,dy,10)
+  map:move(player,dx,dy,4)
   ANIMATE(player,wigwag)
   if dx<0 then player.spr=Redge.left return end
   if dx>0 then player.spr=Redge.right return
@@ -351,7 +334,7 @@ function Main:UPDATE()
 
   map:UPDATE()
   for a in ITEMS(arrows) do
-    a:step()
+    UPDATE(a)
 
     if a:oob() then
       LOG("oob",a)
@@ -364,7 +347,8 @@ function Main:UPDATE()
     end
   end
   for e in ITEMS(explosions) do
-    e:step()
+    UPDATE(e)
+
     e.age = e.age - 1
     if e.age<=10 then
       local here = map:under(e)
@@ -420,7 +404,7 @@ function Main:DRAG(ox, oy, x, y)
     local space = map:get(player.mx+2*dx,player.my+2*dy)
     if space then return end
 
-    map:move(neighbour,dx,dy,5)
+    map:move(neighbour,dx,dy,2)
     move(dx,dy)
     return
   end
@@ -477,7 +461,7 @@ function WinLevel:START()
   level = (state[1] and state[1]+1) or 2
   score = state[2] or 0
   faults = state[3] or 0
-  player = ENT(W/2,H/4,S,Redge.left)
+  player = ENT(Redge.left,W/2,H/4)
   ANIMATE(player,function() return (T/5)%8 end)
   if Plans[level] then
     SAVE(level,score,faults)
@@ -519,4 +503,17 @@ end
 
 ------------------------------------------------------------------- victory
 
-return Cart
+FIELD(1,Redge.stop,"Best level","Never played",3)
+FIELD(2,SPRCODE("TROPHY"),"Completions","Not completed",2)
+FIELD(3,SPRCODE("CHERRIES"),"Best score","Not completed",3)
+FIELD(4,SPRCODE("PILE OF POO"),"Fewest faults","Not completed",4)
+FIELD(5,nil,"Credits","IDEALsoft 19828")
+FIELD(6,nil,"Inspired by","C64 Saracen")
+
+return {
+  name="Archer",
+  info="a puzzle game",
+  api="i5",
+  icon=Redge.stop,
+  start=Menu,
+}

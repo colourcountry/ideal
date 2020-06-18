@@ -1,9 +1,3 @@
-Cart = {
-  name="_carousel",
-  hidden=true,
-  api="n83"
-}
-
 DATA_LEAK_TEST = "leaking"
 
 messages = {
@@ -14,17 +8,19 @@ messages = {
 Main = MODE("Main")
 
 function Main:START(secrets)
+  if not secrets then
+    ERROR("Can't run carousel directly")
+  end
+
   cartItems = {}
   quit = secrets.quit
   for k,v in ITEMS(secrets.carts) do
-    if not k:find("^_") then
-      cartItems[#cartItems+1] = {
-        id=k,
-        name=v.name,
-        icon=v.icon,
-        action=function() secrets.switch_cart(k) end
-      }
-    end
+    cartItems[#cartItems+1] = {
+      id=k,
+      name=v.name,
+      icon=v.icon,
+      action=function() secrets.switch_cart(k) end
+    }
   end
   LOG("Found ",#cartItems," carts")
   m = MENU(cartItems)
@@ -59,14 +55,9 @@ function Main:RELEASE(ox,oy,x,y)
   m:handle_release(ox,oy,x,y)
 end
 
-function Cart:START()
-  --ERROR("Only system can run carousel")
-end
-
-function Cart:SHUTDOWN()
-  if quit then
-    quit()
-  end
-end
-
-return Cart
+return {
+  name="rom/carousel",
+  api="i5",
+  start=Main,
+  SHUTDOWN=function() if quit then quit() end end
+}

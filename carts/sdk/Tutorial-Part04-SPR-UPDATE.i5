@@ -1,0 +1,37 @@
+M = MODE("M")
+
+function M:START()
+  ball_x = H/2
+  ball_y = W/2
+  ball_dx = 4
+  ball_dy = 0
+
+  gravity = 1
+  max_dy = 10
+end
+
+function M:UPDATE()
+  ball_x = ball_x + ball_dx
+  ball_y = ball_y + ball_dy
+  ball_dy = MIN(max_dy, ball_dy + gravity)
+
+  if ball_y>H then ball_dy = -ball_dy end
+  if ball_x<0 or ball_x>W then ball_dx = -ball_dx end
+end
+
+function M:TOUCH(x,y)
+  ball_x = x
+  ball_y = y
+  ball_dy = 0
+end
+
+function M:DRAW()
+  CLS()
+  SPR(SPRCODE("SOCCER BALL"),ball_x,ball_y)
+end
+
+return {
+  name="tutorial/Tutorial-Part04-SPR-UPDATE",
+  api="i5",
+  start=M
+}

@@ -1,7 +1,0 @@
-M=MODE("M",{DRAW=function()TITLE("IDEAL!",W/2,H/3,0,0)end})
-
-return {
-  name="tutorial/Tutorial-Part01-Hello-oneline",
-  api="n83",
-  START=function() GO(M) end
-}

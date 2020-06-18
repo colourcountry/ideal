@@ -1,6 +1,6 @@
 local api = {
   MODEL="IDEAL-5",
-  API="n83",
+  API="i5",
   URL="IDEAL.COLOURCOUNTRY.NET",
   W=144,
   H=240,
@@ -12,6 +12,9 @@ local api = {
   MAX=math.max,
   MIN=math.min,
   ABS=math.abs,
+  SIN=math.sin,
+  COS=math.cos,
+  TAU=math.pi*2,
   RND=love.math.random,
   SQRT=math.sqrt,
   UPPER=string.upper,
@@ -32,6 +35,37 @@ PRINT("Left",H/2,0)
 PRINT("Top",W/2,0,0)
 ```
 ]],
+  [api.T]=[[The number of frames elapsed since the current MODE started up.
+
+The IDEAL machine runs at 30 frames per second, but if you want to measure real times, use TIMER instead.
+]],
+  [api.S]=[[The width or height of a sprite, in graphics units.
+
+IDEAL sprites are always square.
+]],
+  [api.L]=[[The width or height of a text character, in graphics units.
+
+IDEAL text characters are always square.
+]],
+  [api.SIN]=[[Sine function.]],
+  [api.COS]=[[Cosine function.]],
+  [api.TAU]=[[2π, the period of the sine and cosine functions.]],
+  [api.FLR]=[[Return the next lower integer to the number supplied.
+```
+@ FLR(4.6)
+4
+@ FLR(-8.1)
+-9
+```
+]],
+  [api.CEIL]=[[Return the next higher integer to the number supplied.
+```
+@ CEIL(2.2)
+3
+@ CEIL(-0.5)
+0
+```
+]]
 }
 
 cur_x = 0
@@ -46,7 +80,7 @@ end
 
 function api.EXEC(chunk,chunkid)
    -- this is kind of horrible but works for the moment
-  ok, result = pcall(loadstring, "--"..(chunkid or "anonymous").."\nsetfenv(1,sys.environment())\n"..chunk)
+  ok, result = pcall(loadstring, "--"..(chunkid or "anonymous").."\nsetfenv(1,environment())\n"..chunk)
   if (ok) then
     return result
   end
@@ -83,7 +117,7 @@ function api.CHARAT(s,i)
 end
 
 function api.LOG(...)
-  local s = (api.T>0 and tostring(api.T)..": ") or ""
+  local s = (api.T>0 and cur_cart.name and cur_cart.name.."@"..tostring(api.T)..": ") or ""
   for k,v in pairs({...}) do
     s = s..api.STR(v).." "
   end
@@ -131,6 +165,31 @@ function api.COLOUR(fg)
   cur_fg = colours[(fg and math.floor(fg%16)) or 0]
   cur_shader:send("transform",matrix_for_colour(cur_fg))
 end
+help[api.COLOUR]=[[Set the current colour.
+```
+@ COLOUR(13) -- White colour.
+```
+
+The defined colours are
+```
+0 - red
+1 - orange-red
+2 - orange
+3 - yellow
+4 - chartreuse
+5 - green
+6 - turquoise
+7 - cyan
+8 - sky blue
+9 - blue
+10 - purple
+11 - plum
+12 - pink
+13 - white
+14 - grey
+15 - brown
+```
+]]
 
 texts = {}
 
@@ -145,7 +204,7 @@ function print_string(strg, x, y, anchor_x, anchor_y, scale)
   end
   strg = api.STR(strg)
 
-  key = strg.." - "..api.STR(cur_fg)
+  key = strg
   if texts[key] then
     print_text(texts[key], x, y, anchor_x or 1, anchor_y or 1, scale)
     return
@@ -156,14 +215,17 @@ function print_string(strg, x, y, anchor_x, anchor_y, scale)
     codepoints[#codepoints+1] = get_codepoint(utf8)
   end
   local c = new_canvas(api.S*#codepoints,api.S)
+
+  local all_ok = true
   c:start()
   cur_shader:send("transform",identity_matrix)
   for i,cp in ipairs(codepoints) do
-    api.SPR(cp,i*api.S-api.S/2,api.S/2)
+    this_ok = api.SPR(cp,i*api.S-api.S/2,api.S/2)
+    if not this_ok then all_ok=false end
   end
   c:stop()
 
-  texts[key]=c
+  if all_ok then texts[key]=c end -- don't want to cache, if there was a problem rendering (e.g. on startup)
   cur_shader:send("transform",matrix_for_colour(cur_fg))
   print_text(c, x, y, anchor_x or 1, anchor_y or 1, scale)
 end
@@ -171,14 +233,17 @@ end
 function api.SPR(spr, x, y)
   if quads[spr] then
     lg.draw(atlases[spr], quads[spr],(x-sprite_radius)*units,(y-sprite_radius)*units)
-  else
+    return true
+  end
+  if quads[0x1f196] then
     lg.draw(atlases[0x1f196], quads[0x1f196],(x-sprite_radius)*units,(y-sprite_radius)*units)
   end
+  return false
 end
 
 function api.SPRGROUP(name)
   return {}
-  --return sys.sprites.groups[name]  --FIXME: add groups
+  --return sprites.groups[name]  --FIXME: add groups
 end
 
 function api.SPRCODE(name)
@@ -193,12 +258,42 @@ end
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
   print_string(strg, x, y, anchor_x, anchor_y)
 end
+help[api.TITLE]=[[Paint a value in large letters.
+Each character will be the size of one sprite, S graphics units square.
+
+Parameters: (The same as PRINT)
+
+1. The value to paint.
+2. The X coordinate to paint at, in graphics units.
+3. The Y coordinate to paint at, in graphics units.
+4. _(Optional, default 0)_ -1 to anchor the right side of the text to the coordinates supplied; 0 for the centre; 1 for the left side.
+5. _(Optional, default 0)_ -1 to anchor the bottom of the text to the coordinates supplied; 0 for the centre; 1 for the top.
+
+```
+TITLE("Large centred text",x,y)
+```
+]]
 
 function api.PRINT(strg, x, y, anchor_x, anchor_y)
   if not x then x=cur_x anchor_x=1 end
   if not y then y=cur_y+api.L anchor_y=1 end
   print_string(strg, x, y, anchor_x, anchor_y, 0.5)
 end
+help[api.PRINT]=[[Paint a value.
+Each character will be L graphics units square.
+
+Parameters: (The same as TITLE)
+
+1. The value to paint.
+2. The X coordinate to paint at, in graphics units.
+3. The Y coordinate to paint at, in graphics units.
+4. _(Optional, default 0)_ -1 to anchor the right side of the text to the coordinates supplied; 0 for the centre; 1 for the left side.
+5. _(Optional, default 0)_ -1 to anchor the bottom of the text to the coordinates supplied; 0 for the centre; 1 for the top.
+
+```
+PRINT("Centred text",x,y)
+```
+]]
 
 function print_text(text, x, y, anchor_x, anchor_y, scale)
   if scale then
@@ -280,11 +375,13 @@ end
 function api.CLS()
   lg.clear({0,0,0,1})
 end
+help[api.CLS]=[[Clear the screen to black.
+]]
 
 function api.EJECT()
   api.LOG("Eject")
-  switch_cart("_carousel."..api.API, "Main", {
-    carts = carts,
+  switch_cart(carousel_cart, nil, {
+    carts = user_carts,
     switch_cart = switch_cart,
     quit = love.event.quit
   })
@@ -298,7 +395,7 @@ function api.ERROR(msg,...)
     love.event.quit()
     return
   end
-  switch_cart("_error."..api.API, "Main", {
+  switch_cart("rom/error."..api.API, "Main", {
     msg=msg,
     quit=love.event.quit
   })
@@ -312,29 +409,17 @@ end
 function api.RESTART()
   api.LOG("Restarting cart "..cur_cartid)
   api.T = 0
-  if not cur_cart.START then
-    api.LOG("No START function!")
+  if not cur_cart.start then
+    api.LOG("No start mode!")
     api.ERROR("Bad cart")
     return
   end
-  cur_cart:START()
+  api.GO(cur_cart.start)
 end
 
 function api.GO(mode)
   local id = (cur_cart and cur_cart.id) or cur_cartid
-  api.LOG("Reloading cart ",id," as ",mode)
-  cur_modes = {}
-  cur_cart = get_cart(id)
-  cur_mode = cur_modes[mode.name]
-  if not cur_mode then
-    api.ERROR("?MODENAME")
-    return
-  end
-  api.LOG("Entering",cur_mode)
-  mode_end_time = love.timer.getTime()+mode_panic_time
-  if cur_mode.START then
-    cur_mode:START()
-  end
+  switch_cart(id,mode.name)
 end
 
 function api.POLAR(x,y,ox,oy)
@@ -364,22 +449,17 @@ end
 -------------------------------------------------------------------- Object types
 
 entid = 1
-function api.ENT(x, y, r, spr, c, flags)
+function api.ENT(spr, x, y, c, r)
   local ent = require("lib/ent")
-
-  if not flags then flags={} end
-  -- add the original sprite and its name to flags,
-  -- so we can tell what it was even if its sprite is changed
-  flags[spr] = true
 
   local o = {
     x=x,
     y=y,
-    r=r,
+    r=r or api.S,
     id=entid,
     spr=spr,
-    c=c,
-    flags=flags
+    c=c or 0,
+    flags={ [spr]=true }
   }
   entid = entid+1
   setmetatable(o, {__index=ent})
@@ -389,7 +469,7 @@ end
 function api.IS(e,k)
   if not e or not e.flags then return false end
   if e.flags[k] then return true end
-  return sys.sprites.names[k] and e.flags[sys.sprites.names[k]]
+  return sprites.names[k] and e.flags[sprites.names[k]]
 end
 
 function api.LOOP()
@@ -409,7 +489,7 @@ function api.MAP(flags)
   local flagsets = {}
   if flags then
     for k,f in pairs(flags) do
-      k = sys.sprites.names[k] or k
+      k = sprites.names[k] or k
       flagsets[k] = {}
       for i,v in pairs(f) do
         flagsets[k][v] = true
@@ -600,11 +680,29 @@ function api.TIMER(s)
     timer_end_time = false
   end
   if timer_end_time then
-    return math.ceil(timer_end_time-now)
+    return timer_end_time-now
   else
-    return math.ceil(mode_end_time-now)
+    return mode_end_time-now
   end
 end
+help[api.TIMER]=[[Manage the internal timer.
+
+The timer starts at 999 and counts down in seconds.
+```
+@ TIMER()
+994.4867219
+```
+
+Supply a number as a parameter to set the timer to this many seconds.
+```
+@ TIMER(60)
+60
+```
+
+If 999 seconds elapse within the same MODE, the IDEAL machine will forcibly restart that MODE.
+You can use the default timer to help you prevent this happening.
+Resetting the timer does not affect this feature.
+]]
 
 api.KEYWORDS = api
 

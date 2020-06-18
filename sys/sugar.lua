@@ -5,8 +5,10 @@ function sugar.SIGN(number)
 end
 
 function sugar.TWINKLE()
-  api.COLOUR(api.T/5)
+  api.COLOUR(api.T/3)
 end
+help[sugar.TWINKLE]=[[Set the current colour to a rainbow cycling effect.
+]]
 
 function api.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
   for i,s in api.ITEMS(strgs) do
@@ -69,6 +71,16 @@ function sugar.DRAW(o)
   else
     api.LOG("ERROR: Can't draw object ",o)
     api.ERROR("Can't draw this")
+  end
+end
+
+function sugar.UPDATE(o)
+  if not o then return end
+  if o.UPDATE then
+    o:UPDATE()
+  else
+    api.LOG("ERROR: Can't update object ",o)
+    api.ERROR("Can't update this")
   end
 end
 

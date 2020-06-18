@@ -1,20 +1,17 @@
-Cart = {
+return {
   name="tests/help",
-  api="n83",
+  api="i5",
+  start=MODE("M",{START=function()
+    local kw = {}
+    for k,f in ITEMS(KEYWORDS) do
+      kw[#kw+1]=k
+    end
+    SORT(kw)
+    LOG("# Keyword reference")
+    for i=1,#kw do
+      LOG("\n## "..kw[i])
+      HELP(KEYWORDS[kw[i]])
+    end
+    ERROR()
+  end})
 }
-
-function Cart:START()
-  local kw = {}
-  for k,f in ITEMS(KEYWORDS) do
-    kw[#kw+1]=k
-  end
-  SORT(kw)
-  LOG("# Keyword reference")
-  for i=1,#kw do
-    LOG("\n## "..kw[i])
-    HELP(KEYWORDS[kw[i]])
-  end
-  ERROR()
-end
-
-return Cart

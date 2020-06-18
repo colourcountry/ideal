@@ -1,0 +1,43 @@
+M = MODE("M")
+
+function M:START(secrets)
+  LOG(secrets)
+  tasks = secrets and secrets.tasks or {}
+  tasks_done = 0
+end
+
+function M:UPDATE()
+  if T%2==1 then
+    if tasks_done<#tasks then
+      tasks_done = tasks_done + 1
+      LOG("Doing task",tasks_done,"of",#tasks)
+      tasks[tasks_done]()
+      return
+    end
+    if T>70 then EJECT() end
+  end
+end
+
+function M:DRAW()
+  BORDER(0)
+  CLS()
+  local letter = FLR(T/2)
+  for i=1, letter+1 do
+    COLOUR(i)
+    PRINT(MODEL,W/2,((-T)%(H*1.2))+i*L-H, 0, 0)
+  end
+  COLOUR(13)
+  TITLE(MODEL,W/2,H/2,0,0)
+end
+
+function M:TOUCH(x,y,isNew)
+  if (isNew) then
+    EJECT()
+  end
+end
+
+return {
+  name="rom/splash",
+  api="i5",
+  start=M
+}

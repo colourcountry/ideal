@@ -19,6 +19,9 @@ sprites = {
   names=require("atlas/names")
 }
 
+colours = require("sys/colours")
+white = colours[0]
+
 api = require("sys/api")     -- Commands that proxy or use inaccessible Love/Lua functions
 sugar = require("sys/sugar") -- Commands that could be done in the cart but are very common
 
@@ -31,6 +34,9 @@ cur_cart = nil
 cur_cartid = nil -- this is available during cart load
 cur_modes = {} -- register of modes defined in this cart
 mode_end_time = nil
+
+frame_rate = 1/30
+frame_remain = 0
 
 function add_quad_page(filename, hex)
   local tile_size = sprite_size * units
@@ -45,22 +51,10 @@ function add_quad_page(filename, hex)
   end
 end
 
-local files = love.filesystem.getDirectoryItems("atlas/")
-for k, file in ipairs(files) do
-  local hex = file:match("([0-9a-f]+)[.]png")
-  if hex then
-	   add_quad_page("atlas/"..file, hex)
-   end
-end
-
-colours = require("sys/colours")
-white = colours[0]
-
-cur_fg = colours[8]
-cur_mode = "unset"
 cur_touches = {}
 mouse_touch_id = "MOUSE"
 twinkle = 0
+cur_fg = colours[8]
 
 shader_code = [[
         extern mat4 transform;
@@ -125,22 +119,27 @@ function drawTimers()
   lg.rectangle("fill",0,ut,4,dt)
 end
 
-function switch_cart(cartid,mode,secrets)
+function switch_mode(mode,secrets)
+  cur_mode = mode
+  api.LOG("Switch to mode",cur_mode)
+  if secrets then
+    mode_end_time = false -- disable timer for special carts
+  else
+    mode_end_time = love.timer.getTime()+mode_panic_time
+  end
+  if cur_mode.START then
+    cur_mode:START(secrets)
+  end
+end
+
+function switch_cart(cartid,modename,secrets)
   cur_cartid = cartid
   cur_modes = {}
-  api.LOG("Switching to",cur_cartid)
+  api.LOG("Switch to cart",cur_cartid,modename,secrets)
   cur_cart = get_cart(cur_cartid)
   if cur_cart.loaded then
-    if mode and cur_modes[mode] then
-      mode_end_time = false -- disable timer for special carts
-      cur_mode = cur_modes[mode]
-      if cur_mode.START then
-        cur_mode:START(secrets)
-      end
-    else
-      mode_end_time = love.timer.getTime()+mode_panic_time
-      api.RESTART() -- restart safely
-    end
+    local new_mode = cur_modes[modename] or cur_cart.start
+    switch_mode(new_mode,secrets)
   else
     api.ERROR(cur_cart)
   end
@@ -163,8 +162,14 @@ function love.update()
     local x,y = love.touch.getPosition(v)
     handle_drag(id,x,y)
   end
-  if cur_mode.UPDATE then
-    cur_mode:UPDATE()
+
+  frame_remain = frame_remain + love.timer.getDelta()
+  while frame_remain > frame_rate do
+    if cur_mode.UPDATE then
+      cur_mode:UPDATE()
+    end
+    frame_remain = frame_remain - frame_rate
+    api.T = api.T + 1
   end
   update_time = love.timer.getTime() - update_time
 end
@@ -188,7 +193,6 @@ function love.draw()
   canvas:paste()
 	lg.pop() -- pop transformation state
 
-  api.T = api.T + 1
   draw_time = love.timer.getTime() - draw_time
   drawTimers()
 end
@@ -285,14 +289,3 @@ function environment()
   })
   return o
 end
-
--- this is all that is exposed to main
-return {
-  carts=carts,
-  api=api,
-  sprites=sprites,
-  memory=memory,
-  switch_cart=switch_cart,
-  environment=environment,
-  new_canvas=new_canvas
-}

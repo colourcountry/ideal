@@ -1,0 +1,57 @@
+M = MODE("M")
+
+function M:START()
+  balls = LOOP()
+  balls:add(ENT(SPRCODE("SOCCER BALL"),H/2,W/2))
+
+  gravity = 1
+  max_dy = 10
+  min_dy = 5
+  damp = 0.8
+end
+
+----------------------------------------------------------------------M:UPDATE
+function bounce(ball)
+  if ball.y>H then
+    if ball.dy>min_dy then
+      ball.dy = -ball.dy*damp
+      return
+    end
+    if ball.y>H+S then
+      balls:remove(ball)
+      LOG("Removed ball",ball.id)
+      return
+    end
+  end
+  ball.dy = ball.dy + gravity
+end
+
+function M:UPDATE()
+  for ball in ITEMS(balls) do
+    UPDATE(ball)
+    bounce(ball)
+    if ball.x<0 or ball.x>W then ball.dx = -ball.dx end
+  end
+end
+
+----------------------------------------------------------------------
+function M:TOUCH(x,y)
+  local new_ball = ENT(SPRCODE("SOCCER BALL"),x,y)
+  new_ball.dx = RND(16)-8
+  new_ball.dy = -RND(8)
+  balls:add(new_ball)
+  LOG("Added ball",new_ball.id)
+end
+
+function M:DRAW()
+  CLS()
+  for ball in ITEMS(balls) do
+    DRAW(ball)
+  end
+end
+
+return {
+  name="tutorial/Tutorial-Part05-ENT-LOOP",
+  api="i5",
+  start=M
+}

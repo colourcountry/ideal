@@ -7,7 +7,7 @@ function mode:LOG()
   for k,v in pairs(self) do
     r = r..k.." "
   end
-  return "mode "..self.name..r
+  return self.name..r
 end
 
 return mode

@@ -64,11 +64,11 @@ end
 
 function loop:remove(x)
   if not x then
-    sys.api.ERROR("Missing parameter","Not enough parameters to loop:remove")
+    api.ERROR("Missing parameter","Not enough parameters to loop:remove")
   end
   local i = self.ritems and self.ritems[x]
   if not i then
-    sys.api.LOG("WARNING:",x,"was not in",self)
+    api.LOG("WARNING:",x,"was not in",self)
     return
   end
   self.items[i] = nil

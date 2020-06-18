@@ -13,7 +13,7 @@ map = {
 }
 map.__index = map
 
-S = sys.api.S
+S = api.S
 
 function map:ITEMS()
   local all_items = {}
@@ -36,8 +36,8 @@ end
 function draw_with_text(e, text_colour)
   e:DRAW()
   if e.text and text_colour then
-    sys.api.COLOUR(text_colour)
-    sys.api.PRINT(e.text,e.x,e.y,0,0)
+    api.COLOUR(text_colour)
+    api.PRINT(e.text,e.x,e.y,0,0)
   end
 end
 
@@ -49,8 +49,8 @@ function map:DRAW()
     draw_with_text(e,text_colour)
   end
   if self.hx and self.hy then
-    sys.api.COLOUR(1)
-    sys.api.CIRCLE(self.hx*S,self.hy*S,8)
+    api.COLOUR(1)
+    api.CIRCLE(self.hx*S,self.hy*S,8)
   end
   if self.zx and self.zy then
     if not self.zw then
@@ -59,8 +59,8 @@ function map:DRAW()
     if not self.zh then
       self.zh = 1
     end
-    sys.api.COLOUR(5)
-    sys.api.RECT(self.zx*S-8,self.zy*S-8,self.zw*S,self.zh*S)
+    api.COLOUR(5)
+    api.RECT(self.zx*S-8,self.zy*S-8,self.zw*S,self.zh*S)
   end
   self.canvas:stop()
   self.canvas:paste(-self.cx,-self.cy)
@@ -73,7 +73,7 @@ function map:UPDATE()
         if self:get(e.mx,e.my).id == e.id then
           self:unset(e.mx,e.my)
         end
-        self:set_entity(e.goal_mx,e.goal_my,e)
+        self:put_entity(e,e.goal_mx,e.goal_my)
         e.moving = nil
       else
         e.x = e.x + (e.goal_mx*S-e.x)/e.moving
@@ -103,7 +103,7 @@ function map:unset(mx,my)
   end
 end
 
-function map:set_entity(mx,my,e)
+function map:put_entity(e,mx,my)
   e.mx = mx
   e.my = my
   e.x = mx*S
@@ -115,21 +115,21 @@ function map:set_entity(mx,my,e)
   return self[mx][my]
 end
 
-function map:set(mx,my,spr,c)
+function map:put(spr,mx,my,c)
   if spr == " " then
     self.unset(mx,my)
     return
   end
   if mx > self.sx then
     self.sx = mx
-    self.canvas = sys.new_canvas((self.sx+1)*S,(self.sy+1)*S)
+    self.canvas = new_canvas((self.sx+1)*S,(self.sy+1)*S)
   end
   if my > self.sy then
     self.sy = my
-    self.canvas = sys.new_canvas((self.sx+1)*S,(self.sy+1)*S)
+    self.canvas = new_canvas((self.sx+1)*S,(self.sy+1)*S)
   end
-  local e = sys.api.ENT(0,0,S/2,spr,c,self.flagsets[spr])
-  return self:set_entity(mx,my,e)
+  local e = api.ENT(spr,0,0,c,S/2):set(self.flagsets[spr])
+  return self:put_entity(e,mx,my)
 end
 
 function map:move(e,dx,dy,t)
@@ -141,10 +141,10 @@ function map:move(e,dx,dy,t)
   end
   if self:oob(
   e.mx+dx,e.my+dy) then
-    return -- can't move off the map, extend with map:set first
+    return -- can't move off the map, extend with map:put first
   end
   if not t or t==0 then
-    self:set_entity(e.mx+dx,e.my+dy,e)
+    self:put_entity(e,e.mx+dx,e.my+dy)
     return
   end
   e.goal_mx = e.mx+dx
@@ -155,7 +155,7 @@ end
 function map:fromLines(lines,c)
   for j=1,#lines do
     for i=1,#lines[j] do
-      self:set(j,i,lines[j][i])
+      self:put(lines[j][i],j,i)
     end
   end
 end
@@ -205,7 +205,7 @@ function map:grab(e,if_empty,in_zone)
   if in_zone and (mx<self.zx or my<self.zy or mx>=self.zx+self.zw or my>=self.zy+self.zh) then
     return nil
   end
-  return self:set_entity(mx,my,e)
+  return self:put_entity(e,mx,my)
 end
 
 function map:free(e)

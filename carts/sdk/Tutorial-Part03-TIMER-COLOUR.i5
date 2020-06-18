@@ -1,0 +1,21 @@
+M = MODE("M")
+
+function M:DRAW()
+  CLS()
+
+  for i=0,15 do
+    COLOUR(i)
+    TITLE("IDEAL!",W/2,S*i,0,0)
+  end
+
+  COLOUR(13)
+  PRINT(FLR(TIMER()),0,H/2)
+  PRINT(T,W,H/2,-1)
+  PRINT(FLR(T/(999-TIMER())).."fps",W/2,H/2,0)
+end
+
+return {
+  name="tutorial/Tutorial-Part03-TIMER-COLOUR",
+  api="i5",
+  start=M
+}

@@ -1,8 +1,3 @@
-Cart = {
-  name="tutorial/Tutorial-Part02-Hello",
-  api="n83"
-}
-
 M = MODE("M")
 
 function M:DRAW()
@@ -16,8 +11,8 @@ function M:DRAW()
   PRINT("Bottom",W/2,H,0,-1)
 end
 
-function Cart:START()
-  GO(M)
-end
-
-return Cart
+return {
+  name="tutorial/Tutorial-Part02-Hello",
+  api="i5",
+  start=M
+}

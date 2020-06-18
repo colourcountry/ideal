@@ -1,9 +1,3 @@
-Cart = {
-  name="_memory",
-  hidden=true,
-  api="n83"
-}
-
 Main = MODE("Main")
 
 function Main:START(secrets)
@@ -37,14 +31,8 @@ function Main:RELEASE(ox,oy,x,y)
   end
 end
 
-function Cart:START()
-  GO(Main)
-end
-
-function Cart:SHUTDOWN()
-  if self.__quit then
-    self.__quit()
-  end
-end
-
-return Cart
+return {
+  name="rom/memory",
+  api="i5",
+  start=Main
+}

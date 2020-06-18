@@ -8,7 +8,7 @@ menu = {
   topY = 0,
   windowY = 0,
   boxSize = 0,
-  separation = sys.api.L,
+  separation = api.L,
   cols = 2,
   sensitivity = 5,
   prevY = 0,
@@ -20,16 +20,16 @@ dragging = false
 
 function menu:init()
   if (not self.width) then
-    self.width = sys.api.W
+    self.width = api.W
   end
 
   local validItems = {}
   for i=1,#self.items do
     if not self.items[i].name then
-      sys.api.LOG("ERROR: menu item requires a 'name': ",self.items[i])
+      api.LOG("ERROR: menu item requires a 'name': ",self.items[i])
     else
       if not self.items[i].action then
-        sys.api.LOG("ERROR: menu item requires an 'action': ",self.items[i])
+        api.LOG("ERROR: menu item requires an 'action': ",self.items[i])
       else
         validItems[#validItems+1]=self.items[i]
       end
@@ -49,11 +49,11 @@ function menu:init()
       end
       self.items[i].x = (col-1)*dx
       self.items[i].y = y
-      self.items[i].lines = sys.api.SPLIT(self.items[i].name, (dx-self.separation)/sys.api.L," ")
+      self.items[i].lines = api.SPLIT(self.items[i].name, (dx-self.separation)/api.L," ")
       api.LOG(self.items[i].lines,self.items[i].name,dx-self.separation)
-      local this_dy = #self.items[i].lines*sys.api.L + self.separation
+      local this_dy = #self.items[i].lines*api.L + self.separation
       if self.items[i].icon then
-        this_dy = this_dy + sys.api.S*2
+        this_dy = this_dy + api.S*2
       end
       if this_dy > dy then
         dy = this_dy
@@ -70,7 +70,7 @@ function menu:init()
     end
   end
   self.totalHeight = y
-  self.offset = sys.api.H/2 - sys.api.L
+  self.offset = api.H/2 - api.L
   self.dragOffset = 0
   self.selected = 0
   self.windowY = 100
@@ -81,18 +81,18 @@ function menu:DRAW()
   for i=1, #self.items do
     local item = self.items[i]
     if self.selected==i then
-      sys.api.COLOUR(self.highlight_colour)
-      sys.api.BLOCK(item.x,item.y+self.offset+self.dragOffset,item.w,item.h)
+      api.COLOUR(self.highlight_colour)
+      api.BLOCK(item.x,item.y+self.offset+self.dragOffset,item.w,item.h)
     end
-    sys.api.COLOUR(self.text_colour)
+    api.COLOUR(self.text_colour)
     local x = item.x
     local y = item.y+self.offset+self.dragOffset
     if item.icon then
-      sys.api.PRINTLINES(item.lines, x+item.w/2, y+sys.api.S*2, 0, 0)
-      sys.api.COLOUR(item.colour or 0)
-      sys.api.SPR(item.icon,x+item.w/2,y+sys.api.S)
+      api.PRINTLINES(item.lines, x+item.w/2, y+api.S*2, 0, 0)
+      api.COLOUR(item.colour or 0)
+      api.SPR(item.icon,x+item.w/2,y+api.S)
     else
-      sys.api.PRINTLINES(item.lines, x+item.w/2, y+item.h/2, 0, 0)
+      api.PRINTLINES(item.lines, x+item.w/2, y+item.h/2, 0, 0)
     end
   end
 end

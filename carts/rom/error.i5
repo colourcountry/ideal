@@ -1,14 +1,4 @@
-Cart = {
-  name="_error",
-  hidden=true,
-  api="n83",
-}
-
 Main = MODE("Main")
-
-function Cart:START()
-  GO(Main)
-end
 
 function Main:START(secrets)
   if secrets then
@@ -35,10 +25,9 @@ function Main:TOUCH(x,y,isNew)
   end
 end
 
-function Cart:SHUTDOWN()
-  if quit then
-    quit()
-  end
-end
-
-return Cart
+return {
+  name="rom/error",
+  api="i5",
+  start=Main,
+  SHUTDOWN=function() if quit then quit() end end
+}

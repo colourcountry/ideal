@@ -5,81 +5,95 @@ function love.load()
   sys = require("sys/system")
 
   function save_memory(cartid)
-    if not sys.memory[cartid] then
-      sys.api.LOG(cartid,": nothing to save")
+    if not memory[cartid] then
+      api.LOG(cartid,": nothing to save")
     end
-    local j = json.encode(sys.memory[cartid])
+    local j = json.encode(memory[cartid])
 
     love.filesystem.createDirectory("memory")
     local path = "memory/"..cartid
-    --sys.api.LOG(path,": writing JSON",j)
+    --api.LOG(path,": writing JSON",j)
     love.filesystem.write(path,j)
   end
 
   function get_cart(cartid)
     local path = "carts/"..cartid
-    sys.api.LOG(path,": reading file")
+    api.LOG(path,": reading file")
     chunk = love.filesystem.read(path)
 
     if not chunk then
-      sys.api.LOG(path,": file not found")
+      api.LOG(path,": file not found")
       return "Not available"
     end
 
     local mem_path = "memory/"..cartid
-    sys.api.LOG(mem_path,": reading memory")
+    api.LOG(mem_path,": reading memory")
     local j = love.filesystem.read(mem_path)
     if j then
-      sys.memory[cartid] = json.decode(j)
+      memory[cartid] = json.decode(j)
     else
-      sys.api.LOG(mem_path,": no memory found")
+      api.LOG(mem_path,": no memory found")
     end
 
-    local code = sys.api.EXEC(chunk,cartid)
+    local code = api.EXEC(chunk,cartid)
     if not code then
-      sys.api.LOG(path,": chunk was not callable")
+      api.LOG(path,": chunk was not callable")
       return "Bad cart"
     end
 
     new_cart = code()
     if not new_cart then
-      sys.api.LOG(path,": chunk didn't return an object")
+      api.LOG(path,": chunk didn't return an object")
       return "Bad cart"
     end
     if not new_cart.name then
-      sys.api.LOG(path,": returned object didn't have a 'name'")
+      api.LOG(path,": returned object didn't have a 'name'")
       new_cart = nil
       return "Bad cart"
     end
-    if new_cart.api ~= sys.api.API then
-      sys.api.LOG(path..": cart was for"..new_cart.api..", wanted "..sys.api.API)
+    if new_cart.api ~= api.API then
+      api.LOG(path..": cart was for "..new_cart.api..", wanted "..api.API)
       new_cart = nil
       return "Incompatible cart"
     end
 
-    sys.carts[cartid] = new_cart
-    sys.carts[cartid].loaded = true
-    sys.carts[cartid].id = cartid
-    sys.api.LOG(path,": loaded successfully")
+    carts[cartid] = new_cart
+    carts[cartid].loaded = true
+    carts[cartid].id = cartid
+    api.LOG(path,": loaded successfully")
     return new_cart
   end
 
-  for k,v in pairs(love.filesystem.getDirectoryItems("carts")) do
-    sys.api.LOG(k,v)
-    if v:sub(-4)=="."..sys.api.API then
+  user_carts = {}
+  for k,v in ipairs(love.filesystem.getDirectoryItems("carts/user")) do
+    api.LOG(k,v)
+    if v:sub(-(1+#api.API))=="."..api.API then
       next = v:gmatch("([^.]+)[.]")
-      sys.carts[v] = {
+      user_carts["user/"..v] = {
         loaded=false,
         name=next(),
-        icon=next(),
+        icon=tonumber(next() or "0x10008",16),
+        colour=tonumber(next() or 0),
         extra=next()
       }
     end
   end
 
-  if arg[2] and string.match(arg[2], "carts/") then
-    sys.switch_cart(string.gsub(arg[2], "(.*carts/)(.*)", "%2"))
-  else
-    sys.switch_cart("_splash.n83")
+  local splash_secrets = { tasks={} }
+  local files = love.filesystem.getDirectoryItems("atlas")
+  for k, file in ipairs(files) do
+    local hex = file:match("([0-9a-f]+)[.]png")
+    if hex then
+  	   splash_secrets.tasks[#splash_secrets.tasks+1] = function() add_quad_page("atlas/"..file, hex) end
+     end
   end
+
+  if arg[2] and string.match(arg[2], "carts/") then
+    local cartid=string.gsub(arg[2], "(.*carts/)(.*)", "%2")
+    carousel_cart = cartid
+  else
+    carousel_cart = "rom/carousel."..api.API
+  end
+
+  switch_cart("rom/splash."..api.API,nil,splash_secrets)
 end
