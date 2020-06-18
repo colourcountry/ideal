@@ -1,5 +1,5 @@
 local api = {
-  MODEL="IDEAL-5",
+  MODEL="IDEAL 5",
   API="i5",
   URL="IDEAL.COLOURCOUNTRY.NET",
   W=144,
@@ -117,7 +117,7 @@ function api.CHARAT(s,i)
 end
 
 function api.LOG(...)
-  local s = (api.T>0 and cur_cart.name and cur_cart.name.."@"..tostring(api.T)..": ") or ""
+  local s = (api.T>0 and cur_cart and cur_cart.name.."@"..tostring(api.T)..": ") or ""
   for k,v in pairs({...}) do
     s = s..api.STR(v).." "
   end
@@ -159,6 +159,11 @@ function api.BORDER(c)
   c = (c and math.floor(c%16)) or -1
   local f = {colours[c][1]/2, colours[c][2]/2, colours[c][3]/2, 1}
   lg.setBackgroundColor(f)
+end
+
+function api.ERASER()
+  cur_fg = colours[16]
+  cur_shader:send("transform",matrix_for_colour(cur_fg))
 end
 
 function api.COLOUR(fg)
@@ -256,6 +261,8 @@ function api.SPRCODE(name)
 end
 
 function api.TITLE(strg, x, y, anchor_x, anchor_y)
+  if not x then x=cur_x anchor_x=1 end
+  if not y then y=cur_y+api.S anchor_y=1 end
   print_string(strg, x, y, anchor_x, anchor_y)
 end
 help[api.TITLE]=[[Paint a value in large letters.
@@ -277,7 +284,7 @@ TITLE("Large centred text",x,y)
 function api.PRINT(strg, x, y, anchor_x, anchor_y)
   if not x then x=cur_x anchor_x=1 end
   if not y then y=cur_y+api.L anchor_y=1 end
-  print_string(strg, x, y, anchor_x, anchor_y, 0.5)
+  print_string(strg, x, y, anchor_x, anchor_y, api.L/api.S)
 end
 help[api.PRINT]=[[Paint a value.
 Each character will be L graphics units square.
@@ -515,7 +522,7 @@ function api.MENU(items)
   return o
 end
 
-spr_info = api.SPRCODE("CIRCLED INFORMATION SOURCE")
+spr_info = api.SPRCODE("TROPHY")
 spr_eject = api.SPRCODE("EJECT SYMBOL")
 
 function api.MODE(name,parent)
@@ -538,7 +545,7 @@ end
 
 function api.MEMORY()
   local cartid = cur_cartid
-  switch_cart("_memory."..api.API, "Main", {
+  switch_cart("rom/memory."..api.API, "Main", {
     switch_cart = switch_cart,
     draw_field = draw_field,
     memory = memory,
@@ -560,13 +567,13 @@ function draw_field(item,y,include_desc)
   if item.desc and item.desc~="" and include_desc and not item.value then
     local lines = api.SPLIT(api.STR(item.desc),text_width/api.L," ")
     api.COLOUR(8)
-    api.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
+    sugar.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
     y = y + api.L*#lines
   end
   if item.value then
     local lines = api.SPLIT(api.STR(item.value),text_width/api.L," ")
     api.COLOUR(3)
-    api.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
+    sugar.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
     y = y + api.L*#lines
   end
   api.COLOUR(0)

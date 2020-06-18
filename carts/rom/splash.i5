@@ -14,19 +14,22 @@ function M:UPDATE()
       tasks[tasks_done]()
       return
     end
-    if T>70 then EJECT() end
+    if T>80 then EJECT() end
   end
 end
 
 function M:DRAW()
   BORDER(0)
-  CLS()
   local letter = FLR(T/2)
-  for i=1, letter+1 do
-    COLOUR(i)
-    PRINT(MODEL,W/2,((-T)%(H*1.2))+i*L-H, 0, 0)
+  COLOUR(letter%13)
+  PRINT(MODEL,W/2,letter*L,0,-1)
+  if letter*L>H/2 then
+    ERASER()
+    BLOCK(0,H/2-S,W,S*2)
+    COLOUR(letter%13)
+    BOX(0,H/2-S,W,S*2)
+    COLOUR(13)
   end
-  COLOUR(13)
   TITLE(MODEL,W/2,H/2,0,0)
 end
 

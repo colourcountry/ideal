@@ -15,10 +15,8 @@ end
 
 function Main:DRAW()
   CLS()
-  TWINKLE()
-  BOX(L, L, W-2*L, 4*L)
-  COLOUR(3)
-  TITLE(cart.name, W/2, 3*L, 0, 0)
+  BOXTITLE(cart.name, 0, 3, 1)
+
   y = S*4
   for i=1,#memory do
     y = y + draw_field(memory[i],y,true) + L

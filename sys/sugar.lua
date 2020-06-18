@@ -10,7 +10,7 @@ end
 help[sugar.TWINKLE]=[[Set the current colour to a rainbow cycling effect.
 ]]
 
-function api.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
+function sugar.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
   for i,s in api.ITEMS(strgs) do
     if (i==1) then
       api.PRINT(s, x, y, anchor_x, anchor_y) --FIXME: assumes first line is longest
@@ -23,6 +23,27 @@ end
 
 sugar.CIRCLE = api.RING
 sugar.RECT = api.BOX
+
+function sugar.BOXTITLE(strg, y, fg, bg)
+  local margin = api.S/2
+  y = y+margin
+  local lines = api.SPLIT(strg,(api.W-margin*2)/api.S," ")
+  local h = (#lines+1)*api.S
+  if bg then
+    api.COLOUR(bg)
+    api.BLOCK(api.S/2,y,api.W-api.S,h)
+  end
+  api.COLOUR(fg or 13)
+  api.BOX(api.S/2,y,api.W-api.S,h)
+  for i,s in api.ITEMS(lines) do
+    if (i==1) then
+      api.TITLE(s, api.W/2, y+api.S, 0, 0)
+    else
+      api.TITLE(s, api.W/2, nil, 0, 0)
+    end
+  end
+  return y+margin
+end
 
 function sugar.QUADRANT(x, y)
   if x==y or x==-y then

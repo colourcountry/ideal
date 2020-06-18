@@ -1,3 +1,5 @@
+game_icon = 0x1f87a --arrow
+
 Redge = {
   stop=SPRCODE("1/2 redgehog facing down"),
   down=SPRCODE("1/2 redgehog moving down"),
@@ -38,30 +40,14 @@ Plans = {
     "   v ",
   },
   {
-    "@>  <o",
-    "  b   ",
-    "   of "
+    "@<    o",
+    "  b b >",
+    "   ofo "
   },
   {
-    "o   ^ ",
-    "@ b bb",
-    "  b o ",
-    "o   vf",
-  },
-  {
-    " b ^f>",
-    " < b  ",
-    " ^ <  ",
-    "@  ^bf",
-    " b > o",
-  },
-  {
-    " ^ v ",
-    " o o ",
-    "     ",
-    "bTTTb",
-    "  b  ",
-    "o   @",
+    "@  b  o",
+    " b b>>f",
+    "   b  o"
   },
   {
     "b b o",
@@ -71,6 +57,34 @@ Plans = {
     "bvb<b",
     "  v  ",
     "b b b",
+  },
+  {
+    "  @  ",
+    " obo ",
+    " b ^ ",
+    "  bb ",
+    "o v o",
+  },
+  {
+    "o  o^ ",
+    "b b b ",
+    "   bo ",
+    "o@  v ",
+  },
+  {
+    " b >f>",
+    " < b  ",
+    " ^ <  ",
+    "@  ^bf",
+    " b ^ o",
+  },
+  {
+    "< bf  ",
+    "@  ^fo",
+    "o bo f",
+    "fb ^b ",
+    "< bo f",
+    "fv fo "
   },
 }
 
@@ -144,19 +158,14 @@ function Menu:RELEASE(ox, oy, x, y) self.menu:handle_release(ox, oy, x, y) end
 function Menu:DRAW()
   CLS()
   DRAW(self.menu)
-  COLOUR(5)
-  BLOCK(L, L, W-2*L, 4*L)
-  TWINKLE()
-  BOX(L, L, W-2*L, 4*L)
-  COLOUR(13)
-  TITLE("Archer", W/2, 3*L, 0, 0)
+  BOXTITLE("Archer", 0, 3, 1)
   DRAWFIELD(2,S+6*L)
 end
 
 ------------------------------------------------------------------- main
 
 Main = MODE("Play")
-Main.icon = Ogre
+Main.icon = game_icon
 
 function wigwag() return FLR(T/4)%2 end
 
@@ -216,35 +225,25 @@ function player_shoot()
   ERROR("bad assertion","player tried to shoot a weird object",player_shooting)
 end
 
-function ogre_shoot(ogre)
-  local x, y = map:whereis(ogre)
-  arrows:add(ENT(Arrow_sprites.left,x,y,0):speed(-shoot_speed,0))
-  arrows:add(ENT(Arrow_sprites.up,x,y,0):speed(0,-shoot_speed))
-  arrows:add(ENT(Arrow_sprites.right,x,y,0):speed(shoot_speed,0))
-  arrows:add(ENT(Arrow_sprites.down,x,y,0):speed(0,shoot_speed))
-end
-
 function arrow_hit(here,a)
-  --LOG("Arrow",a,"hit",here)
-
   if here==player then
     if a.from_player then return end
-    LOG("Player was shot by an ogre.")
+    LOG("Player was shot.")
     GO(Over)
   end
 
 
   if IS(here,Ogre) then
-    LOG("Arrow",i,"hit an ogre.")
+    LOG("Arrow",a.id,"hit an ogre.")
     if not a.from_player then return end
-    ogre_shoot(here)
+    arrows.remove(a)
     return
   end
 
   arrows:remove(a)
 
   if IS(here,Bomb) then
-    LOG("Arrow",a,"hit a bomb.")
+    LOG("Arrow",a.id,"hit a bomb.")
     local x, y = map:whereis(here)
     arrows:remove(a)
     for bx=-1,1 do
@@ -286,9 +285,6 @@ function explode(here)
     map:free(here)
     ogres:remove(here)
     LOG("Ogre was exploded, now ",ogres)
-    for o in ITEMS(ogres) do
-      ogre_shoot(o) -- enrage other ogres
-    end
     return
   end
 
@@ -429,6 +425,10 @@ function Main:RELEASE(x, y)
   end
 end
 
+function Main:KEY(ch)
+  if ch=="n" then GO(WinLevel) end
+end
+
 ------------------------------------------------------------------- game over
 
 Over = MODE("Game over")
@@ -519,6 +519,6 @@ return {
   name="Archer",
   info="a puzzle game",
   api="i5",
-  icon=Redge.stop,
+  icon=game_icon,
   start=Menu,
 }
