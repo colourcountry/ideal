@@ -10,6 +10,27 @@ end
 help[sugar.TWINKLE]=[[Set the current colour to a rainbow cycling effect.
 ]]
 
+local segs = {
+  ["0"]=0x1fbf0, ["1"]=0x1fbf1, ["2"]=0x1fbf2, ["3"]=0x1fbf3,
+  ["4"]=0x1fbf4, ["5"]=0x1fbf5, ["6"]=0x1fbf6, ["7"]=0x1fbf7,
+  ["8"]=0x1fbf8, ["9"]=0x1fbf9,
+  ["@"]=0xff010, ["a"]=0xff011, ["b"]=0xff012, ["c"]=0xff013,
+  ["d"]=0xff014, ["e"]=0xff015, ["f"]=0xff016, ["g"]=0xff017,
+  ["h"]=0xff018, ["i"]=0xff019, ["j"]=0xff01a, ["k"]=0xff01b,
+  ["l"]=0xff01c, ["m"]=0xff01d, ["n"]=0xff01e, ["o"]=0xff01f,
+  ["p"]=0xff020, ["q"]=0xff021, ["r"]=0xff022, ["s"]=0xff023,
+  ["t"]=0xff024, ["u"]=0xff025, ["v"]=0xff026, ["w"]=0xff027,
+  ["x"]=0xff028, ["y"]=0xff029, ["z"]=0xff02a
+}
+function sugar.SEGMENTDISPLAY(strg,x,y) -- FIXME anchor_x etc
+  strg = api.STR(strg)
+  for i=1,#strg do
+    local spr = segs[api.CHARAT(strg,i)] or 32
+    api.SPR(spr,x,y)
+    x = x + api.S
+  end
+end
+
 function sugar.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
   for i,s in api.ITEMS(strgs) do
     if (i==1) then

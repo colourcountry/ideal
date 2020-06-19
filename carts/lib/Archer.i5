@@ -120,7 +120,7 @@ Main = MODE("Start")
 Main.plans = {
   {"^v<> f",
    " @  o ",
-   "\    /"}
+   "      "}
 }
 
 function wigwag() return FLR(T/4)%2 end
@@ -151,9 +151,9 @@ end
 
 function draw_state()
   COLOUR(4)
-  PRINT(score, W/4, L, 0, 0)
+  SEGMENTDISPLAY(score, W/4, S, 0, 0)
   COLOUR(1)
-  PRINT(faults, 3*W/4, L, 0, 0)
+  SEGMENTDISPLAY(faults, 3*W/4, S, 0, 0)
   DRAW(restart_button)
   if player_carrying then
     DRAW(player_carrying)
