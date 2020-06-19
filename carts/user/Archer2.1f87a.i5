@@ -1,0 +1,13 @@
+Cart = USE("Archer")
+
+Cart.Main.plans = {
+  {
+    "@    ",
+    "Tb o ",
+    "<  v ",
+  },
+}
+
+Cart.name = "Archer Part 2"
+
+return Cart

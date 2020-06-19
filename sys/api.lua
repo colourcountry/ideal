@@ -84,7 +84,10 @@ function api.EXEC(chunk,chunkid)
   if (ok) then
     return result
   end
-  return "ERROR"
+end
+
+function api.USE(filename)
+  return read_file("carts/lib/"..filename.."."..api.API,"lib/"..filename)
 end
 
 function api.STR(o)

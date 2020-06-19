@@ -16,15 +16,44 @@ function love.load()
     love.filesystem.write(path,j)
   end
 
-  function get_cart(cartid)
-    local path = "carts/"..cartid
-    api.LOG(path,": reading file")
+  function read_file(path,logid)
+    api.LOG(path,": reading file for",logid)
     chunk = love.filesystem.read(path)
 
     if not chunk then
       api.LOG(path,": file not found")
-      return "Not available"
+      return nil,"Not available"
     end
+
+    local code = api.EXEC(chunk,logid)
+    if not code then
+      api.LOG(path,": chunk was not callable")
+      return nil,"Bad cart"
+    end
+
+    new_cart = code()
+
+    if not new_cart then
+      api.LOG(path,": chunk didn't return an object")
+      return nil,"Bad cart"
+    end
+    if not new_cart.name then
+      api.LOG(path,": returned object didn't have a 'name'")
+      return nil,"Bad cart"
+    end
+    if new_cart.api ~= api.API then
+      api.LOG(path..": cart was for "..new_cart.api..", wanted "..api.API)
+      return nil,"Incompatible cart"
+    end
+
+    return new_cart,nil
+  end
+
+  function get_cart(cartid)
+    local path = "carts/"..cartid
+
+    new_cart, err = read_file(path,cartid)
+    if err then return err end
 
     local mem_path = "memory/"..cartid
     api.LOG(mem_path,": reading memory")
@@ -33,28 +62,6 @@ function love.load()
       memory[cartid] = json.decode(j)
     else
       api.LOG(mem_path,": no memory found")
-    end
-
-    local code = api.EXEC(chunk,cartid)
-    if not code then
-      api.LOG(path,": chunk was not callable")
-      return "Bad cart"
-    end
-
-    new_cart = code()
-    if not new_cart then
-      api.LOG(path,": chunk didn't return an object")
-      return "Bad cart"
-    end
-    if not new_cart.name then
-      api.LOG(path,": returned object didn't have a 'name'")
-      new_cart = nil
-      return "Bad cart"
-    end
-    if new_cart.api ~= api.API then
-      api.LOG(path..": cart was for "..new_cart.api..", wanted "..api.API)
-      new_cart = nil
-      return "Incompatible cart"
     end
 
     carts[cartid] = new_cart
