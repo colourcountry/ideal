@@ -6,29 +6,36 @@ Redge = {
   up=SPRCODE("1/2 redgehog moving up"),
 }
 
-Arrow_sprites = {
+Arrow_spr = {
   left=SPRCODE("WIDE-HEADED LEFTWARDS HEAVY BARB ARROW"),
   up=SPRCODE("WIDE-HEADED UPWARDS HEAVY BARB ARROW"),
   right=SPRCODE("WIDE-HEADED RIGHTWARDS HEAVY BARB ARROW"),
   down=SPRCODE("WIDE-HEADED DOWNWARDS HEAVY BARB ARROW"),
 }
 
-Fruit = SPRCODE("CHERRIES")
-Ogre = SPRCODE("JAPANESE OGRE")
-Bomb = SPRCODE("BOMB")
-Explosion = SPRCODE("COLLISION SYMBOL")
+Fruit_spr = SPRCODE("CHERRIES")
+Ogre_spr = SPRCODE("JAPANESE OGRE")
+Bomb_spr = SPRCODE("BOMB")
+Explosion_spr = SPRCODE("COLLISION SYMBOL")
+
+Breakables = LOOP()
+Movables = LOOP()
+Arrows = LOOP()
+Ogres = LOOP()
+Edibles = LOOP()
+Bombs = LOOP()
 
 Legend = {
-  ["b"]={Bomb,1},
-  ["o"]={Ogre,-5},
-  ["f"]={Fruit,0},
-  ["<"]={Arrow_sprites.left,3},
-  ["^"]={Arrow_sprites.up,3},
-  [">"]={Arrow_sprites.right,3},
-  ["v"]={Arrow_sprites.down,3},
-  ["T"]={SPRCODE("brick wall top"),-16},
-  ["|"]={SPRCODE("brick wall"),-16},
-  ["@"]={Redge.stop,0},
+  ["b"]={spr=Bomb_spr,        tint=1,   loops={Bombs,Movables}},
+  ["o"]={spr=Ogre_spr,        tint=-5,  loops={Ogres}},
+  ["f"]={spr=Fruit_spr,       tint=0,   loops={Edibles,Breakables}},
+  ["<"]={spr=Arrow_spr.left,  tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,-shoot_speed,0) end},
+  ["^"]={spr=Arrow_spr.up,    tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,0,-shoot_speed) end},
+  [">"]={spr=Arrow_spr.right, tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,shoot_speed,0) end},
+  ["v"]={spr=Arrow_spr.down,  tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,0,shoot_speed) end},
+  ["T"]={spr=SPRCODE("brick wall top"),tint=-16},
+  ["|"]={spr=SPRCODE("brick wall"),tint=-16},
+  ["@"]={spr=Redge.stop,      tint=0},
 }
 
 shoot_speed = 3
@@ -37,11 +44,11 @@ Carry_slot = { W/2, H-S }
 Records = {
   level=FIELD(1,Redge.stop,"Best level","Never played",3),
   wins=FIELD(2,SPRCODE("TROPHY"),"Completions","Not completed",2),
-  score=FIELD(3,SPRCODE("CHERRIES"),"Best score","Not completed",3),
+  score=FIELD(3,Fruit_spr,"Best score","Not completed",3),
   faults=FIELD(4,SPRCODE("PILE OF POO"),"Fewest faults","Not completed",4)
 }
 FIELD(5,nil,"Credits","IDEALsoft 19828")
-FIELD(6,nil,"Inspired by","C64 Saracen")
+FIELD(6,nil,"Inspired by","Saracen (C64)")
 
 function new_level(i,plan)
   if not plan then ERROR("Bad plan","No plan for level",i) return end
@@ -49,18 +56,9 @@ function new_level(i,plan)
   local h = #plan
   local w = #plan[1]
   local player = nil
-  local tint = i*5
+  local level_tint = i*5
 
-  map = MAP({
-    [Arrow_sprites.left]={"arrow","fragile"},
-    [Arrow_sprites.up]={"arrow","fragile"},
-    [Arrow_sprites.down]={"arrow","fragile"},
-    [Arrow_sprites.right]={"arrow","fragile"},
-    [Fruit]={"edible","fragile"},
-    [Bomb]={"movable"}
-  })
-
-  ogres = LOOP()
+  map = MAP()
 
   for i=1,w do
     for j=1,h do
@@ -68,18 +66,26 @@ function new_level(i,plan)
       local p = Legend[here]
 
       if p then
-        local c = p[2]
-        if c<0 then
-          c = tint+c
+        local tint = p.tint or 0
+        if tint<0 then
+          tint = tint + level_tint
         end
 
-        local e = map:put(p[1],i+1,j+1,c)
+        local e = map:put(p.spr,i+1,j+1,tint)
+
+        if p.loops then
+          for i,l in ITEMS(p.loops) do
+            l:add(e)
+          end
+        end
+
+        if p.setup then
+          p.setup(e)
+        end
+
         if here=="@" then
           player = e
           LOG(player)
-        end
-        if here=="o" then
-          ogres:add(e)
         end
       end
     end
@@ -91,7 +97,7 @@ function new_level(i,plan)
     map:put(SPRCODE("border right"),1,j,tint)
     map:put(SPRCODE("border left"),w+2,j,tint)
   end
-  map:centre(W/2,H/2)
+  map:anchor(W/2,H/2)
 
   return player
 end
@@ -135,7 +141,8 @@ function Main:START()
   POST(1,level)
   player = new_level(level,self.plans[level])
   restart_button = ENT(SPRCODE("LEFTWARDS ARROW WITH HOOK"),W/2,S)
-  arrows = LOOP()
+  active_arrows = LOOP()
+  player_arrows = LOOP()
   explosions = LOOP()
   TIMER(60)
 end
@@ -145,7 +152,7 @@ end
 function draw_scene()
   COLOUR(0)
   DRAW(map)
-  DRAW(arrows)
+  DRAW(active_arrows)
   DRAW(explosions)
 end
 
@@ -171,26 +178,28 @@ end
 ------------------------------------------------------------------- main:update
 
 function player_shoot()
-  local player_shooting = player_carrying:moveto(player.x-map.cx,player.y-map.cy)
-  arrows:add(player_shooting)
-  player_shooting.from_player = true
+  local plx, ply = map:whereis(player)
+  local player_shooting = player_carrying:POS(plx,ply)
+  active_arrows:add(player_shooting)
+  player_arrows:add(player_shooting)
   player_carrying = nil
-  if IS(player_shooting,Arrow_sprites.left) then player_shooting:speed(-shoot_speed,0) return end
-  if IS(player_shooting,Arrow_sprites.up) then player_shooting.dy = -shoot_speed return end
-  if IS(player_shooting,Arrow_sprites.right) then player_shooting.dx = shoot_speed return end
-  if IS(player_shooting,Arrow_sprites.down) then player_shooting.dy = shoot_speed return end
-  ERROR("bad assertion","player tried to shoot a weird object",player_shooting)
+  --[[
+  if IS(player_shooting,Arrow_spr.left) then player_shooting:speed(-shoot_speed,0) return end
+  if IS(player_shooting,Arrow_spr.up) then player_shooting.dy = -shoot_speed return end
+  if IS(player_shooting,Arrow_spr.right) then player_shooting.dx = shoot_speed return end
+  if IS(player_shooting,Arrow_spr.down) then player_shooting.dy = shoot_speed return end
+  ERROR("bad assertion","player tried to shoot a weird object",player_shooting)]]
 end
 
 function arrow_hit(here,a)
   if here==player then
-    if a.from_player then return end
+    if IN(player_arrows,a) then return end
     LOG("Player was shot.")
     GO(Over)
   end
 
 
-  if IS(here,Ogre) then
+  if IN(Ogres,here) then
     LOG("Arrow",a.id,"hit an ogre.")
     local dx = SIGN(a.dx)
     local dy = SIGN(a.dy)
@@ -201,20 +210,20 @@ function arrow_hit(here,a)
       return
     end
 
-    arrows:remove(a)
+    active_arrows:remove(a)
     map:move(here,dx,dy,5)
     return
   end
 
-  arrows:remove(a)
+  active_arrows:remove(a)
 
-  if IS(here,Bomb) then
+  if IN(Bombs,here) then
     LOG("Arrow",a.id,"hit a bomb.")
     local x, y = map:whereis(here)
-    arrows:remove(a)
+    active_arrows:remove(a)
     for bx=-1,1 do
       for by=-1,1 do
-        local e = ENT(Explosion,x+bx*S,y+by*S)
+        local e = ENT(Explosion_spr,x+bx*S,y+by*S)
         e.age = 15
         explosions:add(e)
       end
@@ -222,20 +231,20 @@ function arrow_hit(here,a)
     return
   end
 
-  if IS(here,"fragile") then
-    LOG("Fragile entity",here.id,here.spr,"was shot, 1 fault.")
+  if IN(Breakables,here) then
+    LOG("Breakable entity",here.id,here.spr,"was shot, 1 fault.")
     faults = faults + 1 -- 2 if it's yours
     map:free(here)
   end
 
-  if IS(here,"edible") then
+  if IN(Edibles,here) then
     LOG("Edible entity",here.id,here.spr,"was shot, 3 fault.")
     faults = faults + 3 -- 5 if it's yours
   end
 
-  if a.from_player then
+  if IN(player_arrows,a) then
     LOG("Wasted a shot, 1 fault.")
-    faults = faults + 1 -- wasted an arrow
+    faults = faults + 1
   end
 
 end
@@ -247,20 +256,20 @@ function explode(here)
     return
   end
 
-  if IS(here,Ogre) then
+  if IN(Ogres,here) then
     map:free(here)
-    ogres:remove(here)
+    Ogres:remove(here)
     LOG("Ogre was exploded, now ",ogres)
     return
   end
 
-  if IS(here,Bomb) then
+  if IN(Bombs,here) then
     LOG("Bomb was exploded, 5 points.")
     score = score + 5
     local b = map:free(here)
     for ox=-1,1 do
       for oy=-1,1 do
-        local e = ENT(Explosion,b.x+ox*S,b.y+oy*S)
+        local e = ENT(Explosion_spr,b.x+ox*S,b.y+oy*S)
         e.age = 20
         explosions:add(e)
       end
@@ -268,13 +277,13 @@ function explode(here)
     return
   end
 
-  if IS(here,"fragile") then
-    LOG("Fragile entity",here.id,here.spr,"was exploded, 5 faults.")
+  if IN(Breakables,here) then
+    LOG("Breakable entity",here.id,here.spr,"was exploded, 5 faults.")
     faults = faults + 5
     map:free(here)
   end
 
-  if IS(here,"edible") then
+  if IN(Edibles, here) then
     LOG("Edible entity",here.id,here.spr,"was exploded, 5 faults.")
     faults = faults + 5 -- 10 overall because fragile
   end
@@ -293,19 +302,19 @@ function move(dx,dy)
 end
 
 function Main:UPDATE()
-  if ogres.length==0 and arrows.length==0 and explosions.length==0 then
+  if Ogres.length==0 and active_arrows.length==0 and explosions.length==0 then
     SAVE(level,score,faults)
     GO(WinLevel)
     return
   end
 
   map:UPDATE()
-  for a in ITEMS(arrows) do
+  for a in ITEMS(active_arrows) do
     UPDATE(a)
 
     if a:oob() then
       LOG("oob",a)
-      arrows:remove(a)
+      active_arrows:remove(a)
     end
 
     local here = map:under(a)
@@ -341,7 +350,7 @@ function Main:DRAG(ox, oy, x, y)
 
   if player.moving or player.busy then return end
 
-  local mx,my = map:coord(x,y)
+  local mx,my = map:cell(x,y)
   local dx,dy = QUADRANT(mx-player.mx,my-player.my)
 
   local neighbour = map:get(player.mx+dx,player.my+dy)
@@ -351,21 +360,21 @@ function Main:DRAG(ox, oy, x, y)
     return
   end
 
-  if IS(neighbour,"edible") then
+  if IN(Edibles,neighbour) then
     LOG("Om nom nom, 10 points.")
     score = score + 10
     move(dx,dy)
     return
   end
 
-  if IS(neighbour,"arrow") and not player_carrying then
-    map:free(neighbour):moveto(Carry_slot[1], Carry_slot[2])
+  if IN(Arrows,neighbour) and not player_carrying then
+    map:free(neighbour):POS(Carry_slot[1], Carry_slot[2])
     player_carrying = neighbour
     move(dx,dy)
     return
   end
 
-  if IS(neighbour,"movable") then
+  if IN(Movables, neighbour) then
     if map:oob(player.mx+2*dx,player.my+2*dy) then return end
 
     local space = map:get(player.mx+2*dx,player.my+2*dy)
@@ -392,7 +401,10 @@ function Main:RELEASE(x, y)
 end
 
 function Main:KEY(ch)
-  if ch=="n" then GO(WinLevel) end
+  if ch=="n" then
+    LOG("TRAINER: Level skipped")
+    GO(WinLevel)
+  end
 end
 
 ------------------------------------------------------------------- game over

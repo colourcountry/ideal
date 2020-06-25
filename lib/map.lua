@@ -69,6 +69,12 @@ function map:DRAW()
   self.canvas:paste(-self.cx,-self.cy)
 end
 
+function map:POS(x,y)
+  if x then self.cx = x end
+  if y then self.cy = y end
+  return self
+end
+
 function map:UPDATE()
   for e in self:ITEMS() do
     if e.moving then
@@ -79,8 +85,7 @@ function map:UPDATE()
         self:put_entity(e,e.goal_mx,e.goal_my)
         e.moving = nil
       else
-        e.x = e.x + (e.goal_mx*S-e.x)/e.moving
-        e.y = e.y + (e.goal_my*S-e.y)/e.moving
+        e:POS(e.goal_mx*S, e.goal_my*S, e.moving)
         e.moving = e.moving-1
       end
     end
@@ -111,6 +116,7 @@ function map:put_entity(e,mx,my)
   e.my = my
   e.x = mx*S
   e.y = my*S
+  e.map = self
   if not self[mx] then
     self[mx] = {}
   end
@@ -174,15 +180,23 @@ function map:empty()
 end
 
 function map:coord(x,y)
-  return math.floor((x+8+self.cx)/S), math.floor((y+8+self.cy)/S)
+  return x+self.cx, y+self.cy
+end
+
+function map:cell(x,y)
+  return math.floor((x+self.cx)/S+0.5), math.floor((y+self.cy)/S+0.5)
 end
 
 function map:whereis(e) -- return the real world coordinate of this entity without freeing it
-  return e.x-self.cx, e.y-self.cy
+  -- FIXME this is not IDEAL as a "class method", should probably be a builtin
+  if e.map then
+    return e.x-e.map.cx, e.y-e.map.cy
+  end
+  return e.x, e.y
 end
 
-function map:under(e) -- given a free entity, what map entity is at the same place
-  local mx,my = self:coord(e.x,e.y)
+function map:under(e) -- given an entity, what map entity is at the same place
+  local mx,my = self:coord(self:whereis(e))
   return self:get(mx,my), mx, my
 end
 
@@ -221,33 +235,32 @@ function map:free(e)
   return e
 end
 
-function map:centre(x,y)
+function map:anchor(x,y,ax,ay)
+  ax = ax or 0
+  ay = ay or 0
   local hs = S/2
-  self.cx = (self.sx+2)*hs-x-hs
-  self.cy = (self.sy+2)*hs-y-hs
+  local msx = (self.sx+2)*hs
+  local msy = (self.sy+2)*hs
+  self.cx = msx*(1-ax)-x-hs
+  self.cy = msy*(1-ay)-y-hs
   --api.LOG("Centred map on ",x,",",y," origin now ",self.cx,",",self.cy)
 end
 
-function map:collides(e)
-  return self:each(function(m)
-    local c = m:collides(e,self.cx,self.cy)
-    if c then
-      return { ent=m, dx=c.dx, dy=c.dy }
-    end
-  end)
+function map:_check_collision(e,mx,my)
+  if self:oob(mx,my) then return end
+  local o = self:get(mx,my)
+  if not o or o==e then return end
+  return o:collides(e)
 end
 
-function map:move_and_repel(e)
-  if (e.dx==0 and e.dy==0) then return end
-  e.x = e.x + e.dx
-  local c = self:collides(e)
-  if c then
-    e.x = e.x - c.dx
-  end
-  e.y = e.y + e.dy
-  c = self:collides(e)
-  if c then
-    e.y = e.y - c.dy
+function map:collisions(e, r) -- FIXME make iterable rather than just returning 1
+  r = r or 1
+  local mx, my = self:cell(self:whereis(e))
+  for mix=mx-r, mx+r do
+    for miy=my-r,my+r do
+      local r = self:_check_collision(e,mix,miy)
+      if r then return r end
+    end
   end
 end
 

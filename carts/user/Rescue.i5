@@ -1,0 +1,249 @@
+Redge = {
+  stop=SPRCODE("1/2 redgehog facing down"),
+  down=SPRCODE("1/2 redgehog moving down"),
+  right=SPRCODE("1/2 redgehog moving right"),
+  left=SPRCODE("1/2 redgehog moving left"),
+  up=SPRCODE("1/2 redgehog moving up"),
+}
+
+Hostage_spr = Redge.down
+Explosion_spr = SPRCODE("COLLISION SYMBOL")
+
+Falling = LOOP()
+Hostages = LOOP()
+
+gravity = 0.5
+damping = 0.05
+thrust_x = 0.8
+thrust_y = 1
+
+Records = {
+  rescues=FIELD(1,Redge.stop,"Most rescues","Never played",3),
+  depth=FIELD(2,SPRCODE("TROPHY"),"Deepest dive","Never played",2),
+  treasure=FIELD(3,SPRCODE("TROPHY"),"Most treasure","Never played",3),
+}
+
+FIELD(4,nil,"Credits","IDEALsoft 19828")
+FIELD(5,nil,"Inspired by","H.E.R.O. (C64)")
+
+function new_level(i)
+  local h = i+40
+  local w = 7
+  local player = nil
+  local level_tint = i*8
+
+  map = MAP()
+
+  for i=1,w do
+    map:put(SPRCODE("brick wall top"),i+1,h+1,tint)
+  end
+
+  for j=1,h+1 do
+    map:put(SPRCODE("border right"),1,j,tint)
+    map:put(SPRCODE("border left"),w+2,j,tint)
+    if j>10 then
+      map:put(SPRCODE("brick wall top"),RND(w)+1,j,tint)
+    end
+  end
+  map:anchor(W/2,H/4,0,1)
+
+  player = map:put(Redge.stop,FLR(w/2),1)
+  Falling:add(player)
+
+  return player
+end
+
+------------------------------------------------------------------- menu
+
+Menu = MODE("Main menu")
+
+-- standard menu functions
+function Menu:START() self.menu = MAINMENU({Main}) end
+function Menu:TOUCH(x, y) self.menu:handle_touch(x, y) end
+function Menu:DRAG(ox, oy, x, y) self.menu:handle_drag(ox, oy, x, y) end
+function Menu:RELEASE(ox, oy, x, y) self.menu:handle_release(ox, oy, x, y) end
+
+function Menu:DRAW()
+  CLS()
+  DRAW(self.menu)
+  BOXTITLE(Cart.name, 0, 3, 1)
+  DRAWFIELD(2,S+6*L)
+end
+
+------------------------------------------------------------------- main
+
+Main = MODE("Start")
+
+function Main:START()
+  self.icon = Cart.icon
+  local state = LOAD()
+  LOG("Loaded state",state)
+  rescues = state[1] or 1
+  depth = state[2] or 0
+  treasure = state[3] or 0
+  POST(1,rescues)
+  player = new_level(1)
+  TIMER(60)
+end
+
+------------------------------------------------------------------- main:draw
+
+function draw_scene()
+  DRAW(map)
+end
+
+function draw_state()
+  COLOUR(8)
+  SEGMENTDISPLAY(rescues, W/4, S, 0, 0)
+  COLOUR(5)
+  SEGMENTDISPLAY(depth, W/2, S, 0, 0)
+  COLOUR(3)
+  SEGMENTDISPLAY(treasure, 3*W/4, S, 0, 0)
+  if player_carrying then
+    DRAW(player_carrying)
+    TWINKLE()
+    BOX(player_carrying.x-S,player_carrying.y-S,S*2,S*2)
+  end
+end
+
+function Main:DRAW()
+  CLS()
+  draw_scene()
+  draw_state()
+end
+
+------------------------------------------------------------------- main:update
+
+function turn_player()
+  if player.dx<-1 then player.spr=Redge.left return end
+  if player.dx>1 then player.spr=Redge.right return end
+  player.spr=Redge.stop
+  return
+end
+
+function move_player()
+  local acc_y = 0
+  local acc_x = 0
+  if player.goal_x then
+    acc_x = CLAMP(-thrust_x,(player.goal_x-player.x)*thrust_x-player.dx,thrust_x)
+  else
+    acc_x = -player.dx*0.5
+  end
+  if player.goal_y then
+    acc_y = CLAMP(-thrust_y,(player.goal_y-player.y)*thrust_y-player.dy,thrust_y)
+  end
+  acc_y = acc_y + gravity
+  player:ACC(acc_x, acc_y)
+  player:DAMP(damping)
+
+  turn_player()
+
+  player:repel(function(e)
+    return map:collisions(e)
+  end)
+
+  depth=FLR(player.y/S)
+
+  UPDATE(player)
+end
+
+function Main:UPDATE()
+  move_player()
+
+  local goal_cy = player.y-H/3
+  map.cy = goal_cy
+  --map.cy = (map.cy+goal_cy)/2
+
+  UPDATE(map)
+end
+
+function Main:DRAG(ox, oy, x, y)
+  player.goal_x, player.goal_y = map:coord(x,y)
+end
+
+function Main:RELEASE(x, y)
+  player.goal_x = nil
+  player.goal_y = nil
+end
+
+function Main:KEY(ch)
+  if ch=="n" then
+    LOG("TRAINER: Level skipped")
+    GO(WinLevel)
+  end
+end
+
+------------------------------------------------------------------- game over
+
+Over = MODE("Game over")
+
+function Over:START()
+  local state = LOAD()
+  rescues = state[1] or 1
+  depth = state[2] or 0
+  treasure = (state[3] and state[3]+1) or 1
+  SAVE(rescues,depth,treasure)
+end
+
+function Over:DRAW()
+  BORDER(8)
+  CLS()
+  COLOUR(0)
+  TITLE("GLUG", W/2, H/2, 0, 0)
+  COLOUR(8)
+  PRINT("rescues "..level, W/2, H/2+S*3, 0, 0)
+  PRINT("depth "..score, W/2, H/2+S*4, 0, 0)
+  PRINT("treasure "..faults, W/2, H/2+S*5, 0, 0)
+  DRAWFIELD(2,H-S*2)
+end
+
+function Over:RELEASE(x,y)
+  RESTART()
+end
+
+------------------------------------------------------------------- level clear
+
+WinLevel = MODE("Win level")
+
+function WinLevel:START()
+  local state = LOAD()
+  rescues = (state[1] and state[1]+1) or 2
+  depth = state[2] or 0
+  treasure = state[3] or 0
+
+  SAVE(rescues, depth, treasure)
+end
+
+function WinLevel:DRAW()
+  BORDER(8)
+  CLS()
+  if level then
+    COLOUR(0)
+    TITLE("rescues "..rescues, W/2, H/2, 0, 0)
+  end
+  COLOUR(8)
+  PRINT("depth "..depth, W/2, H/2+S*4, 0, 0)
+  PRINT("treasure "..treasure, W/2, H/2+S*5, 0, 0)
+  DRAWFIELD(2,H-S*2)
+end
+
+function WinLevel:RELEASE(x,y)
+  if level then
+    GO(Main)
+  else
+    RESTART()
+  end
+end
+
+------------------------------------------------------------------- victory
+
+Cart = {
+  name="Rescue",
+  icon=0x1f87a,
+  info="a rescue game",
+  api="i5",
+  start=Menu,
+  Main=Main,
+}
+
+return Cart

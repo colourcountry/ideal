@@ -4,6 +4,23 @@ function sugar.SIGN(number)
   return (number > 0 and 1) or (number == 0 and 0) or -1
 end
 
+function sugar.CLAMP(low, x, high)
+  if high<low then
+    low, high = high, low
+  end
+  return math.min( math.max(x,low), high )
+end
+help[sugar.CLAMP]=[[_(low, value, high) or (high, value, low)_ Constrain a value between two extremes, and return the result.
+```
+@ CLAMP(3,60,300)
+60
+@ CLAMP(3,-2,300)
+3
+@ CLAMP(300,4000,3)
+300
+```
+]]
+
 function sugar.TWINKLE()
   api.COLOUR(api.T/3)
 end
@@ -136,6 +153,21 @@ function sugar.ANIMATE(o,f)
   end
 end
 
+function api.IS(spr,e) -- FIXME deprecate
+  return e:IS(spr)
+end
+
+function api.IN(l,e) -- Applies to loops
+  return l:IN(e)
+end
+
+function api.POS(o,x,y) -- Applies to entities and maps
+  return o:POS(x,y)
+end
+
+function api.VEL(e,x,y) -- Applies to entities
+  return e:VEL(x,y)
+end
 --------------------------------------------------------------- Style and design
 
 function sugar.MAINMENU(modelist)

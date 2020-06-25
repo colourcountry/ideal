@@ -384,8 +384,9 @@ end
 
 function api.CLS()
   lg.clear({0,0,0,1})
+  api.COLOUR(0)
 end
-help[api.CLS]=[[Clear the screen to black.
+help[api.CLS]=[[Clear the screen to black and reset the current tint to 0 (red, for sprites without their own colour.)
 ]]
 
 function api.EJECT()
@@ -474,12 +475,6 @@ function api.ENT(spr, x, y, c, r)
   entid = entid+1
   setmetatable(o, {__index=ent})
   return o
-end
-
-function api.IS(e,k)
-  if not e or not e.flags then return false end
-  if e.flags[k] then return true end
-  return sprites.names[k] and e.flags[sprites.names[k]]
 end
 
 function api.LOOP()

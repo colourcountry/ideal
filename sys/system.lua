@@ -6,6 +6,7 @@ lg = love.graphics
 -- Various properties of the system.
 units=4 --resolution of sprite atlases, in pixels per IDEAL unit
 mode_panic_time = 999 -- if a mode is this old (in seconds) then it will automatically be restarted
+trainer=false -- if you press a key - since games aren't supposed to use keys
 
 lg.setLineWidth(units)
 
@@ -193,8 +194,12 @@ function love.draw()
   canvas:paste()
 	lg.pop() -- pop transformation state
 
-  draw_time = love.timer.getTime() - draw_time
-  drawTimers()
+  if trainer then
+    draw_time = love.timer.getTime() - draw_time
+    drawTimers()
+    local screenW,screenH = lg.getDimensions()
+    lg.printf("d e v e l o p m e n t   m o d e",0,screenH/2,screenW,"center")
+  end
 end
 
 keys = {
@@ -202,8 +207,8 @@ keys = {
   left={0, api.H/2},
   down={api.W/2, api.H},
   up={api.W/2, 0},
+  ['return']={api.W/2,api.H/2},
 }
-keys['return'] = {api.W/2,api.H/2}
 
 function love.keypressed(key, scancode, isRepeat)
   if (scancode=='escape') then
@@ -214,10 +219,15 @@ function love.keypressed(key, scancode, isRepeat)
   end
   local k = keys[scancode]
   if (k and cur_mode.TOUCH) then
-    cur_mode.TOUCH(math.floor(k[1]), math.floor(k[2]), true)
+    cur_mode:TOUCH(math.floor(k[1]), math.floor(k[2]), true)
+    return
   end
+  trainer = true -- unapproved key
   if cur_mode.KEY then
-    cur_mode:KEY(scancode)
+    local r = cur_mode:KEY(scancode)
+    if not r then
+      api.LOG("Key had no effect:",scancode)
+    end
   end
 end
 
