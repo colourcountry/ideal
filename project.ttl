@@ -11,7 +11,7 @@
 .
 
 <https://github.com/colourcountry/ideal/issues> a :WebPage
-;    :about <ideal/ideal-5>
+;    :about <ideal/dist/ideal-5>
 ;    :productOf <ideal/project>
 ;    skos:prefLabel "IDEAL-5 issues on Github"@en
 .
