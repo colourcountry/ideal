@@ -5,7 +5,7 @@
 
 <ideal/icon> a :Picture .
 
-<ideal/ideal-5> a :Software
+<ideal/dist/ideal-5> a :Software
 ;   :productOf <ideal/project>
 ;   skos:prefLabel "IDEAL 5"@en
 .
