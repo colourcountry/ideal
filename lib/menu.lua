@@ -89,7 +89,7 @@ function menu:DRAW()
     local y = item.y+self.offset+self.dragOffset
     if item.icon then
       sugar.PRINTLINES(item.lines, x+item.w/2, y+api.S*2, 0, 0)
-      api.COLOUR(item.colour or 0)
+      api.COLOUR(item.icon_tint or 0)
       api.SPR(item.icon,x+item.w/2,y+api.S)
     else
       sugar.PRINTLINES(item.lines, x+item.w/2, y+item.h/2, 0, 0)

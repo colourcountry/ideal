@@ -89,8 +89,8 @@ function new_level(i,plan)
         end
       end
     end
-    map:put(SPRCODE("brick wall top"),i+1,1,tint)
-    map:put(SPRCODE("brick wall top"),i+1,h+2,tint)
+    map:put(SPRCODE("brick wall top"),i+1,1,level_tint-16)
+    map:put(SPRCODE("brick wall top"),i+1,h+2,level_tint-16)
   end
 
   for j=1,h+2 do
@@ -318,6 +318,7 @@ function Main:UPDATE()
     end
 
     local here = map:under(a)
+    LOG(here)
     if here then
       arrow_hit(here,a)
     end

@@ -21,6 +21,7 @@ local api = {
   LOWER=string.lower,
   MID=string.sub,
   SORT=table.sort,
+  VAL=tonumber,
 }
 
 help = {
@@ -86,8 +87,10 @@ function api.EXEC(chunk,chunkid)
   end
 end
 
-function api.USE(filename)
-  return read_file("carts/lib/"..filename.."."..api.API,"lib/"..filename)
+function api.EPISODE(filename,epname)
+  local cart = read_file("carts/lib/"..filename.."."..api.API,"lib/"..filename)
+  cart.episode_name = epname
+  return cart
 end
 
 function api.STR(o)

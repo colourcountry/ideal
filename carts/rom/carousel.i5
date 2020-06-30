@@ -2,6 +2,7 @@ DATA_LEAK_TEST = "leaking"
 
 messages = {
   select="SELECT CARTRIDGE",
+  select_episode = "SELECT EPISODE",
   no_carts="NO CARTRIDGES"
 }
 
@@ -12,18 +13,55 @@ function Main:START(secrets)
     ERROR("Can't run carousel directly")
   end
 
-  cartItems = {}
+  games = {}
+  gameNames = {}
+
   quit = secrets.quit
   for k,v in ITEMS(secrets.carts) do
-    cartItems[#cartItems+1] = {
-      id=k,
-      name=v.name,
-      icon=v.icon,
+    LOG(k,v)
+    if not games[v.name] then
+      games[v.name] = {
+        id=k,
+        name=v.name,
+        icon=(v.icon and VAL(v.icon)) or 0x10008,
+        icon_tint=v.icon_tint and VAL(v.icon_tint),
+        episodes = {}
+      }
+      gameNames[#gameNames+1] = v.name
+    end
+
+    local ep = games[v.name].episodes
+    ep[#ep+1] = {
+      id=v.episode or "",
+      name=v.episode_name or v.episode or "",
       action=function() secrets.switch_cart(k) end
     }
   end
-  LOG("Found ",#cartItems," carts")
-  m = MENU(cartItems)
+  LOG("Found ",#gameNames," games")
+  SORT(gameNames)
+
+  cartItems = {}
+  for i=1,#gameNames do
+    local g = games[gameNames[i]]
+    local action
+    if #(g.episodes)==1 then
+      action = g.episodes[1].action
+    else
+      ep_menu = MENU(g.episodes) --FIXME sort them
+      action = function() cur_menu = ep_menu msg = messages.select_episode end
+    end
+
+    cartItems[i] = {
+      id = g.id,
+      name = g.name,
+      icon = g.icon,
+      icon_tint = g.icon_tint,
+      action = action
+    }
+  end
+
+  main_menu = MENU(cartItems)
+  cur_menu = main_menu
   msg = messages.select
 end
 
@@ -36,23 +74,32 @@ end
 
 function Main:DRAW()
   CLS()
-  DRAW(m)
+  DRAW(cur_menu)
   TWINKLE()
   TITLE(MODEL, W/2, 24, 0, 0)
   COLOUR(13)
   PRINT(msg, W/2, 40, 0, 0)
 end
 
+function Main:ESCAPE() -- FIXME
+  if cur_menu == main_menu then
+    EJECT()
+    return
+  end
+  cur_menu = main_menu
+  msg = messages.select
+end
+
 function Main:TOUCH(x,y)
-  m:handle_touch(x, y)
+  cur_menu:handle_touch(x, y)
 end
 
 function Main:DRAG(ox,oy,x,y)
-  m:handle_drag(ox,oy,x,y)
+  cur_menu:handle_drag(ox,oy,x,y)
 end
 
 function Main:RELEASE(ox,oy,x,y)
-  m:handle_release(ox,oy,x,y)
+  cur_menu:handle_release(ox,oy,x,y)
 end
 
 return {

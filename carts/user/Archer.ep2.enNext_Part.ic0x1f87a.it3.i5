@@ -1,4 +1,4 @@
-Cart = USE("Archer")
+Cart = EPISODE("Archer","Episode two")
 
 Cart.Main.plans = {
   {
@@ -7,7 +7,5 @@ Cart.Main.plans = {
     "<  v ",
   },
 }
-
-Cart.name = "Archer Part 2"
 
 return Cart

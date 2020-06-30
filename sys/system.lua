@@ -35,6 +35,7 @@ cur_cart = nil
 cur_cartid = nil -- this is available during cart load
 cur_modes = {} -- register of modes defined in this cart
 mode_end_time = nil
+debug_scancode = "" -- whatever key was pressed last
 
 frame_rate = 1/30
 frame_remain = 0
@@ -198,7 +199,8 @@ function love.draw()
     draw_time = love.timer.getTime() - draw_time
     drawTimers()
     local screenW,screenH = lg.getDimensions()
-    lg.printf("d e v e l o p m e n t   m o d e",0,screenH/2,screenW,"center")
+    lg.printf("d e v e l o p m e n t   m o d e",0,screenH/3,screenW,"center")
+    lg.printf(debug_scancode,0,screenH/2,screenW,"center")
   end
 end
 
@@ -223,6 +225,7 @@ function love.keypressed(key, scancode, isRepeat)
     return
   end
   trainer = true -- unapproved key
+  debug_scancode = scancode
   if cur_mode.KEY then
     local r = cur_mode:KEY(scancode)
     if not r then

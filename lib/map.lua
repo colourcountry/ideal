@@ -190,13 +190,15 @@ end
 function map:whereis(e) -- return the real world coordinate of this entity without freeing it
   -- FIXME this is not IDEAL as a "class method", should probably be a builtin
   if e.map then
+    api.LOG("mapmap",e)
     return e.x-e.map.cx, e.y-e.map.cy
   end
   return e.x, e.y
 end
 
 function map:under(e) -- given an entity, what map entity is at the same place
-  local mx,my = self:coord(self:whereis(e))
+  local mx,my = self:cell(self:whereis(e))
+  api.LOG("under",e,mx,my)
   return self:get(mx,my), mx, my
 end
 
@@ -226,10 +228,12 @@ function map:grab(e,if_empty,in_zone)
 end
 
 function map:free(e)
-  self:unset(e.x/S,e.y/S)
+  -- FIXME this is a bit weird because it doesn't actually need to belong to this map anymore
+  e.map:unset(e.x/S,e.y/S)
   if e then
-    e.x = e.x - self.cx
-    e.y = e.y - self.cy
+    e.x = e.x - e.map.cx
+    e.y = e.y - e.map.cy
+    e.map = nil
   end
   --api.LOG("Freed",e,"from",mx,my)
   return e

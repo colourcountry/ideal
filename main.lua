@@ -1,5 +1,12 @@
 -- TODO detect installed carts somehow
 
+filename_fields = {
+  ["ic"]="icon",
+  ["it"]="icon_tint",
+  ["ep"]="episode",
+  ["en"]="episode_name",
+}
+
 function love.load()
   require("json/json") -- this uses the old module() way of working
   sys = require("sys/system")
@@ -73,16 +80,22 @@ function love.load()
 
   user_carts = {}
   for k,v in ipairs(love.filesystem.getDirectoryItems("carts/user")) do
-    api.LOG(k,v)
     if v:sub(-(1+#api.API))=="."..api.API then
-      next = v:gmatch("([^.]+)[.]")
-      user_carts["user/"..v] = {
-        loaded=false,
-        name=next(),
-        icon=tonumber(next() or "0x10008",16),
-        colour=tonumber(next() or 0),
-        extra=next()
+      local next = v:gmatch("([^.]+)[.]")
+      local x = next()
+      cart_props = {
+        name=x,
+        loaded=false
       }
+      x = next()
+      while x do
+        if filename_fields[x:sub(1,2)] then
+          cart_props[filename_fields[x:sub(1,2)]] = x:sub(3):gsub("_"," ")
+        end
+        x = next()
+      end
+      user_carts["user/"..v] = cart_props
+      api.LOG("Found cart: ",cart_props)
     end
   end
 
