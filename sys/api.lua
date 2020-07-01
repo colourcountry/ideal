@@ -87,11 +87,20 @@ function api.EXEC(chunk,chunkid)
   end
 end
 
-function api.EPISODE(filename,epname)
+function api.EPISODE(filename)
   local cart = read_file("carts/lib/"..filename.."."..api.API,"lib/"..filename)
-  cart.episode_name = epname
   return cart
 end
+help[api.EPISODE]=[[This cart defines an episode of a parent cart in the library.
+
+When it sees this command, the IDEAL machine will immediately load in the parent cart.
+The rest of the episode cart can redefine variables, etc., to alter how the parent cart works,
+add new modes, or other things.
+
+Unlike MODEs, EPISODEs are full carts in the IDEAL system. They have their own data storage and independent
+high scores and achievements. However, episodes can't talk to each other.
+]]
+
 
 function api.STR(o)
   if o == nil then
@@ -485,9 +494,7 @@ function api.LOOP()
   local o = {
     length=0
   }
-  setmetatable(o, {
-    __index=loop,
-  })
+  setmetatable(o, {__index=loop})
   return o
 end
 
@@ -509,16 +516,17 @@ function api.MAP(flags)
     flagsets=flagsets
   }
   mapid = mapid+1
-  setmetatable(o, map)
+  setmetatable(o, {__index=map})
   return o
 end
 
-function api.MENU(items)
+function api.MENU(items,cols)
   local menu = require("lib/menu")
   local o = {
-    items=items
+    items=items,
+    cols=cols or 2
   }
-  setmetatable(o, menu)
+  setmetatable(o, {__index=menu})
   o:init()
   return o
 end

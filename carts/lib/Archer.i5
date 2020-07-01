@@ -467,7 +467,11 @@ function WinLevel:DRAW()
     TITLE("LEVEL "..level, W/2, H/2, 0, 0)
   else
     TWINKLE()
-    TITLE("VICTORY", W/2, H/2, 0, 0)
+    if faults==0 then
+      TITLE("PERFECT", W/2, H/2, 0, 0)
+    else
+      TITLE("VICTORY", W/2, H/2, 0, 0)
+    end
     COLOUR(0)
     DRAW(player)
   end

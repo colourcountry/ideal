@@ -190,7 +190,6 @@ end
 function map:whereis(e) -- return the real world coordinate of this entity without freeing it
   -- FIXME this is not IDEAL as a "class method", should probably be a builtin
   if e.map then
-    api.LOG("mapmap",e)
     return e.x-e.map.cx, e.y-e.map.cy
   end
   return e.x, e.y
@@ -198,7 +197,6 @@ end
 
 function map:under(e) -- given an entity, what map entity is at the same place
   local mx,my = self:cell(self:whereis(e))
-  api.LOG("under",e,mx,my)
   return self:get(mx,my), mx, my
 end
 

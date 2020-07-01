@@ -1,6 +1,6 @@
 menu = {
   text_colour = 13,
-  highlight_colour = 14,
+  highlight_colour = 8,
   topY = 0,
   scrollY = 0,
   initY = 0,
@@ -9,12 +9,12 @@ menu = {
   windowY = 0,
   boxSize = 0,
   separation = api.L,
+  padding = api.L/2,
   cols = 2,
   sensitivity = 5,
   prevY = 0,
   inertia = 0,
 }
-menu.__index = menu
 
 dragging = false
 
@@ -41,7 +41,7 @@ function menu:init()
   local dx = (self.width + self.separation)/self.cols
 
   for row=1,math.ceil(#self.items/self.cols) do
-    local dy = dx/2
+    local dy = 0
     for col=1,self.cols do
       local i = (row-1)*self.cols+col
       if not self.items[i] then
@@ -49,11 +49,11 @@ function menu:init()
       end
       self.items[i].x = (col-1)*dx
       self.items[i].y = y
-      self.items[i].lines = api.SPLIT(self.items[i].name, (dx-self.separation)/api.L," ")
+      self.items[i].lines = api.SPLIT(self.items[i].name, (dx-self.separation-self.padding*2)/api.L," ")
       api.LOG(self.items[i].lines,self.items[i].name,dx-self.separation)
-      local this_dy = #self.items[i].lines*api.L + self.separation
+      local this_dy = #self.items[i].lines*api.L + self.padding*2 + self.separation
       if self.items[i].icon then
-        this_dy = this_dy + api.S*2
+        this_dy = this_dy + api.S + api.L
       end
       if this_dy > dy then
         dy = this_dy

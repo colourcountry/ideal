@@ -213,11 +213,13 @@ keys = {
 }
 
 function love.keypressed(key, scancode, isRepeat)
-  if (scancode=='escape') then
-    if cur_cart and cur_cart.SHUTDOWN then
-      cur_cart:SHUTDOWN()
+  if (scancode=='escape' or scancode=='acback') then
+    if cur_cart and cur_cart.ESCAPE then
+      cur_cart:ESCAPE()
+      return
+    else
+      api.EJECT()
     end
-    api.EJECT()
   end
   local k = keys[scancode]
   if (k and cur_mode.TOUCH) then

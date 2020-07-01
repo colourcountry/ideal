@@ -47,8 +47,12 @@ function Main:START(secrets)
     if #(g.episodes)==1 then
       action = g.episodes[1].action
     else
-      ep_menu = MENU(g.episodes) --FIXME sort them
-      action = function() cur_menu = ep_menu msg = messages.select_episode end
+      ep_menu = MENU(g.episodes,1) --FIXME sort them
+      action = function()
+        cur_menu = ep_menu
+        cur_msg = messages.select_episode
+        cur_title = gameNames[i]
+      end
     end
 
     cartItems[i] = {
@@ -62,7 +66,8 @@ function Main:START(secrets)
 
   main_menu = MENU(cartItems)
   cur_menu = main_menu
-  msg = messages.select
+  cur_msg = messages.select
+  cur_title = MODEL
 end
 
 function Main:UPDATE()
@@ -76,18 +81,9 @@ function Main:DRAW()
   CLS()
   DRAW(cur_menu)
   TWINKLE()
-  TITLE(MODEL, W/2, 24, 0, 0)
+  TITLE(cur_title, W/2, 24, 0, 0)
   COLOUR(13)
-  PRINT(msg, W/2, 40, 0, 0)
-end
-
-function Main:ESCAPE() -- FIXME
-  if cur_menu == main_menu then
-    EJECT()
-    return
-  end
-  cur_menu = main_menu
-  msg = messages.select
+  PRINT(cur_msg, W/2, 40, 0, 0)
 end
 
 function Main:TOUCH(x,y)

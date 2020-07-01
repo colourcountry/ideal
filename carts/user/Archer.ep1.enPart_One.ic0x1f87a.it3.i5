@@ -1,4 +1,4 @@
-Cart = EPISODE("Archer","Episode one")
+Cart = EPISODE("Archer")
 
 Cart.Main.plans = {
   {

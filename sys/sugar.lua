@@ -168,6 +168,7 @@ end
 function api.VEL(e,x,y) -- Applies to entities
   return e:VEL(x,y)
 end
+
 --------------------------------------------------------------- Style and design
 
 function sugar.MAINMENU(modelist)
