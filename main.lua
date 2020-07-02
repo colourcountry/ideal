@@ -1,10 +1,10 @@
 -- TODO detect installed carts somehow
 
 filename_fields = {
-  ["ic"]="icon",
-  ["it"]="icon_tint",
-  ["ep"]="episode",
-  ["en"]="episode_name",
+  ["ic"]={ name="icon", type="val" },
+  ["it"]={ name="icon_tint", type="val" },
+  ["ep"]={ name="episode", type="str" },
+  ["en"]={ name="episode_name", type="str" },
 }
 
 function love.load()
@@ -57,11 +57,6 @@ function love.load()
   end
 
   function get_cart(cartid)
-    local path = "carts/"..cartid
-
-    new_cart, err = read_file(path,cartid)
-    if err then return err end
-
     local mem_path = "memory/"..cartid
     api.LOG(mem_path,": reading memory")
     local j = love.filesystem.read(mem_path)
@@ -71,9 +66,21 @@ function love.load()
       api.LOG(mem_path,": no memory found")
     end
 
+    local path = "carts/"..cartid
+    new_cart, err = read_file(path,cartid)
+    if err then
+      return err
+    end
+
+    if carts[cartid] then
+      for k,v in pairs(carts[cartid]) do
+        new_cart[k] = v -- enrich with filename fields
+      end
+    end
+
+    new_cart.loaded = true
+    new_cart.id = cartid
     carts[cartid] = new_cart
-    carts[cartid].loaded = true
-    carts[cartid].id = cartid
     api.LOG(path,": loaded successfully")
     return new_cart
   end
@@ -89,12 +96,18 @@ function love.load()
       }
       x = next()
       while x do
-        if filename_fields[x:sub(1,2)] then
-          cart_props[filename_fields[x:sub(1,2)]] = x:sub(3):gsub("_"," ")
+        local ff = filename_fields[x:sub(1,2)]
+        if ff then
+          if ff.type=="val" then
+            cart_props[ff.name] = tonumber(x:sub(3))
+          else
+            cart_props[ff.name] = x:sub(3):gsub("_"," ")
+          end
         end
         x = next()
       end
       user_carts["user/"..v] = cart_props
+      carts["user/"..v] = cart_props
       api.LOG("Found cart: ",cart_props)
     end
   end

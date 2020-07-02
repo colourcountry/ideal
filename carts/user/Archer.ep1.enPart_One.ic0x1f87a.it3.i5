@@ -1,57 +1,67 @@
 Cart = EPISODE("Archer")
 
-Cart.Main.plans = {
+Cart.Main.levels = {
   {
-    "@    ",
-    " b o ",
-    "   v ",
+    name="Level 1",
+    plan={
+      "@<    o",
+      "  b b >",
+      "   ofo "
+    }
   },
   {
-    "@<    o",
-    "  b b >",
-    "   ofo "
+    plan={
+      "@  b  o",
+      " b b>>f",
+      "   b  o"
+    }
   },
   {
-    "@  b  o",
-    " b b>>f",
-    "   b  o"
+    plan={
+      "b b o",
+      " @ < ",
+      "b b<b",
+      " v   ",
+      "bvb<b",
+      "  v  ",
+      "b b b",
+    }
   },
   {
-    "b b o",
-    " @ < ",
-    "b b<b",
-    " v   ",
-    "bvb<b",
-    "  v  ",
-    "b b b",
+    plan={
+      "  @  ",
+      " obo ",
+      " b ^ ",
+      "  bb ",
+      "o v o",
+    }
   },
   {
-    "  @  ",
-    " obo ",
-    " b ^ ",
-    "  bb ",
-    "o v o",
+    plan={
+      "o  o^ ",
+      "b b b ",
+      "   bo ",
+      "o@  v ",
+    }
   },
   {
-    "o  o^ ",
-    "b b b ",
-    "   bo ",
-    "o@  v ",
+    plan={
+      " b >f>",
+      " < b  ",
+      " ^ <  ",
+      "@  ^bf",
+      " b ^ o",
+    }
   },
   {
-    " b >f>",
-    " < b  ",
-    " ^ <  ",
-    "@  ^bf",
-    " b ^ o",
-  },
-  {
-    "< bf  ",
-    "@  ^fo",
-    "o bo f",
-    "fb ^b ",
-    "< bo f",
-    "fv fo "
+    plan={
+      "< bf  ",
+      "@  ^fo",
+      "o bo f",
+      "fb ^b ",
+      "< bo f",
+      "fv fo "
+    }
   },
 }
 

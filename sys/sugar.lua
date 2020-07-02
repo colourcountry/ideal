@@ -49,12 +49,15 @@ function sugar.SEGMENTDISPLAY(strg,x,y) -- FIXME anchor_x etc
 end
 
 function sugar.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
+  local w = 0
   for i,s in api.ITEMS(strgs) do
-    if (i==1) then
-      api.PRINT(s, x, y, anchor_x, anchor_y) --FIXME: assumes first line is longest
-    else
-      api.PRINT(s, nil, nil, 1, 0)
-    end
+    w = math.max(w,#s*api.L)
+  end
+  x = x - (1-anchor_x)*w/2
+  y = y - (1-anchor_y)*(#strgs*api.L)/2
+  for i,s in api.ITEMS(strgs) do
+    api.PRINT(s, x, y, 1, 1)
+    y = y + api.L
   end
   return #strgs
 end
@@ -80,7 +83,7 @@ function sugar.BOXTITLE(strg, y, fg, bg)
       api.TITLE(s, api.W/2, nil, 0, 0)
     end
   end
-  return y+margin
+  return y+h+margin
 end
 
 function sugar.QUADRANT(x, y)
@@ -174,7 +177,12 @@ end
 function sugar.MAINMENU(modelist)
   local m = {}
   for i=1,#modelist do
-    m[#m+1] = { name=modelist[i].name, icon=modelist[i].icon, action=function() api.GO(modelist[i]) end }
+    m[#m+1] = {
+      name=modelist[i].name,
+      icon=modelist[i].icon,
+      icon_tint=modelist[i].icon_tint,
+      action=function() api.GO(modelist[i]) end
+    }
   end
   m[#m+1] = { name="Info", icon=spr_info, action=api.MEMORY }
   m[#m+1] = { name="Eject", icon=spr_eject, action=api.EJECT }

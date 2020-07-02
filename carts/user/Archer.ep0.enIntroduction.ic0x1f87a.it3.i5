@@ -1,0 +1,68 @@
+Cart = EPISODE("Archer")
+
+Cart.Main.levels = {
+  {
+    tint=0,
+    hint="Cursed masks have brought bad weather to the village. Reg needs to destroy them or the summer fair will be ruined!",
+    plan={
+      "@   >bo",
+    }
+  },
+  {
+    tint=0,
+    hint="Arrows can't harm the masks, but they can detonate bombs. They only work in one direction.",
+    plan={
+      "@    ",
+      "     ",
+      "ob  v",
+      "     "
+    }
+  },
+  {
+    tint=0,
+    hint="Reg can't pick up an arrow while holding another.",
+    plan={
+      "@ < b",
+      "  ^  ",
+      "obv  ",
+    }
+  },
+  {
+    tint=0,
+    hint="Reg can push bombs but not masks. Collect fruit for points.",
+    plan={
+      "@o  f",
+      "  b  ",
+      ">  o ",
+    }
+  },
+  {
+    tint=0,
+    hint="Bombs can detonate each other.",
+    plan={
+      "@  b ",
+      "  b  ",
+      "ob  >",
+    }
+  },
+  {
+    tint=0,
+    hint="Arrows can shift the masks around.",
+    plan={
+      "@    ",
+      "  o  ",
+      "b><<<",
+    }
+  },
+  {
+    tint=0,
+    hint="For a faultless run, avoid destroying fruit or arrows, or using arrows to no effect.",
+    plan={
+      "@v  v",
+      " o>of",
+      "bv> b",
+    }
+  },
+}
+
+return Cart

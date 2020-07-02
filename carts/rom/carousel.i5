@@ -17,14 +17,15 @@ function Main:START(secrets)
   gameNames = {}
 
   quit = secrets.quit
+  LOG("Carousel starting. Carts available are:")
   for k,v in ITEMS(secrets.carts) do
     LOG(k,v)
     if not games[v.name] then
       games[v.name] = {
         id=k,
         name=v.name,
-        icon=(v.icon and VAL(v.icon)) or 0x10008,
-        icon_tint=v.icon_tint and VAL(v.icon_tint),
+        icon=v.icon or 0x10008,
+        icon_tint=v.icon_tint,
         episodes = {}
       }
       gameNames[#gameNames+1] = v.name

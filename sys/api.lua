@@ -219,9 +219,8 @@ function get_codepoint(utf8)
 end
 
 function print_string(strg, x, y, anchor_x, anchor_y, scale)
-  if (not strg) then
-    strg = "nil"
-  end
+  if not strg or strg=="" then return end
+
   strg = api.STR(strg)
 
   key = strg
@@ -596,6 +595,7 @@ function api.DRAWFIELD(loc,y)
 end
 
 function api.FIELD(loc,icon,name,desc,rule,init_value)
+  api.LOG("Setting up field, memory is",memory[cur_cartid])
   if not memory[cur_cartid] then memory[cur_cartid] = {} end
   if not memory[cur_cartid].fields then memory[cur_cartid].fields = {} end
 

@@ -2,9 +2,12 @@ Cart = EPISODE("Archer")
 
 Cart.Main.plans = {
   {
-    "@    ",
-    "Tb o ",
-    "<  v ",
+    name="Level 2-1",
+    plan={
+      "@    ",
+      "Tb o ",
+      "<  v ",
+    }
   },
 }
 
