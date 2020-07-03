@@ -1,10 +1,15 @@
 Cart = EPISODE("Archer")
 
 local f = SPRCODE("STRAWBERRY")
+local t = 0
 
 Cart.Main.levels = {
   {
-    fruit=f,
+    name="The Cellars",
+    hint=[[The masks first appeared in these abandoned cellars.
+
+A bit strange, but they seemed harmless, so we left them.]],
+    fruit=f, tint=t,
     plan={
       "@o  f",
       "  b  ",
@@ -12,7 +17,7 @@ Cart.Main.levels = {
     }
   },
   {
-    fruit=f,
+    fruit=f, tint=t,
     plan={
       "@v  b",
       " b >f",
@@ -20,7 +25,7 @@ Cart.Main.levels = {
     }
   },
   {
-    fruit=f,
+    fruit=f, tint=t,
     plan={
       "@<    o",
       "  b b  ",
@@ -28,17 +33,7 @@ Cart.Main.levels = {
     }
   },
   {
-    fruit=f,
-    plan={
-      "  @  ",
-      " obo ",
-      " b ^ ",
-      "  bb ",
-      "o v o",
-    }
-  },
-  {
-    fruit=f,
+    fruit=f, tint=t,
     plan={
       "@  b  o",
       " b b>>f",
@@ -46,7 +41,17 @@ Cart.Main.levels = {
     }
   },
   {
-    fruit=f,
+    fruit=f, tint=t,
+    plan={
+      "@  b   ",
+      ">oLTRb ",
+      "v  b   ",
+      "^LTRbb ",
+      ">      "
+    }
+  },
+  {
+    fruit=f, tint=t,
     plan={
       "b b o",
       " @ < ",
@@ -58,7 +63,7 @@ Cart.Main.levels = {
     }
   },
   {
-    fruit=f,
+    fruit=f, tint=t,
     plan={
       "o  o^ ",
       "b b b ",
@@ -67,7 +72,7 @@ Cart.Main.levels = {
     }
   },
   {
-    fruit=f,
+    fruit=f, tint=t,
     plan={
       " b >f>",
       " < b  ",

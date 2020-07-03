@@ -25,6 +25,7 @@ function menu:init()
 
   local validItems = {}
   for i=1,#self.items do
+    self.items[i].highlight_colour=((self.items[i].icon_tint or 0)+((self.items[i].bg_tint or 6))) % 13
     if not self.items[i].name then
       api.LOG("ERROR: menu item requires a 'name': ",self.items[i])
     else
@@ -50,7 +51,7 @@ function menu:init()
       self.items[i].x = (col-1)*dx
       self.items[i].y = y
       self.items[i].lines = api.SPLIT(self.items[i].name, (dx-self.separation-self.padding*2)/api.L," ")
-      local this_dy = #self.items[i].lines*api.L + self.padding*2 + self.separation
+      local this_dy = (#self.items[i].lines+1)*api.L + self.padding*2 + self.separation
       if self.items[i].icon then
         this_dy = this_dy + api.S + api.L
       end
@@ -80,14 +81,18 @@ function menu:DRAW()
   for i=1, #self.items do
     local item = self.items[i]
     if self.selected==i then
-      api.COLOUR(self.highlight_colour)
-      api.BLOCK(item.x,item.y+self.offset+self.dragOffset,item.w,item.h)
+      api.ERASER()
+    else
+      api.COLOUR(item.highlight_colour)
     end
+    api.BLOCK(item.x,item.y+self.offset+self.dragOffset,item.w,item.h)
+    api.COLOUR(item.highlight_colour)
+    api.BOX(item.x,item.y+self.offset+self.dragOffset,item.w,item.h)
     api.COLOUR(self.text_colour)
     local x = item.x
     local y = item.y+self.offset+self.dragOffset
     if item.icon then
-      sugar.PRINTLINES(item.lines, x+item.w/2, y+api.S*2, 0, 0)
+      sugar.PRINTLINES(item.lines, x+item.w/2, y+api.S*2, 0, 1)
       api.COLOUR(item.icon_tint or 0)
       api.SPR(item.icon,x+item.w/2,y+api.S)
     else
@@ -119,7 +124,7 @@ function menu:handle_release(ox,oy,x,y)
   if self.selected>0 and d<self.sensitivity then
     self.items[self.selected].action()
   end
-  self.offset = self.offset + y-oy
+  self.offset = sugar.CLAMP(api.H/2-self.totalHeight, self.offset+y-oy, api.H/2)
   self.dragOffset = 0
   self.selected = 0
 end

@@ -1,0 +1,33 @@
+Cart = EPISODE("Archer")
+
+local f = SPRCODE("WATERMELON")
+local t = 7
+
+Cart.Main.levels = {
+  {
+    name="The Generator",
+    hint=[[]],
+    fruit=f, tint=t,
+    plan={
+      " o o ^>",
+      "< o o ^",
+      " o @ o>",
+      "  b o  ",
+      "<     <"
+    }
+  },
+  {
+    fruit=f, tint=t,
+    plan={
+      "        ",
+      "        ",
+      "        ",
+      "        ",
+      "        ",
+      " @    o ",
+      "        ",
+    }
+  },
+}
+
+return Cart

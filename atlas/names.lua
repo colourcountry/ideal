@@ -4,6 +4,9 @@ Sprite assignments
 
 0x000000 - 0x0effff - Standard Unicode. Named in CAPITALS.
 0x0f0000 - 0x0fffff - PUA A - IDEAL static sprites. Named in lower case.
+0x0f0000 - 0x0f7fff - PUA A - Wall and scenery tiles
+0x0f8000 - 0x0fefff - PUA A - Objects
+0x0ff000 - 0x0fffff - PUA A - Alphabets and symbols
 0x100000 - 0x101fff - PUA B - IDEAL sprites, 2-frame animations
 0x102000 - 0x107fff - PUA B - IDEAL sprites, 4-frame animations
 0x108000 - 0x10ffff - PUA B - IDEAL sprites, 8-frame animations
@@ -40,4 +43,9 @@ return {
 		["2/2 redgehog moving down"]     		=0x100007,
 		["1/2 redgehog facing down"] 	  		=0x100008,
 		["2/2 redgehog facing down"] 	  		=0x100009,
+
+		["lamp"]                        =0x0f8000,
+		["table"]												=0x0f8001,
+		["stool"]                       =0x0f8002,
+		["rug"]                         =0x0f8003,
 }

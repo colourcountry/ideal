@@ -20,21 +20,23 @@ function Main:START(secrets)
   LOG("Carousel starting. Carts available are:")
   for k,v in ITEMS(secrets.carts) do
     LOG(k,v)
-    if not games[v.name] then
+    if games[v.name] then
+      games[v.name].single=false
+    else
       games[v.name] = {
         id=k,
         name=v.name,
         icon=v.icon or 0x10008,
         icon_tint=v.icon_tint,
+        single=true,
         episodes = {}
       }
       gameNames[#gameNames+1] = v.name
     end
 
-    local ep = games[v.name].episodes
-    ep[#ep+1] = {
-      id=v.episode or "",
+    games[v.name].episodes[v.episode or 1] = {
       name=v.episode_name or v.episode or "",
+      icon_tint=v.icon_tint,
       action=function() secrets.switch_cart(k) end
     }
   end
@@ -45,10 +47,19 @@ function Main:START(secrets)
   for i=1,#gameNames do
     local g = games[gameNames[i]]
     local action
-    if #(g.episodes)==1 then
+    LOG(g)
+    if g.single then
       action = g.episodes[1].action
     else
-      ep_menu = MENU(g.episodes,1) --FIXME sort them
+      local seps,meps = {}, {}
+      for k,_ in ITEMS(g.episodes) do
+        seps[#seps+1] = k
+      end
+      SORT(seps)
+      for e=1,#seps do
+        meps[e] = g.episodes[seps[e]]
+      end
+      local ep_menu = MENU(meps,1)
       action = function()
         cur_menu = ep_menu
         cur_msg = messages.select_episode
@@ -80,11 +91,11 @@ end
 
 function Main:DRAW()
   CLS()
-  DRAW(cur_menu)
   TWINKLE()
   TITLE(cur_title, W/2, 24, 0, 0)
   COLOUR(13)
   PRINT(cur_msg, W/2, 40, 0, 0)
+  DRAW(cur_menu)
 end
 
 function Main:TOUCH(x,y)

@@ -1,0 +1,380 @@
+
+
+empty = LOOP() -- convenience
+
+------------------------------------------------------------------- menu
+
+Menu = MODE("Menu")
+
+-- standard menu functions
+function Menu:START()
+  self.menu = MAINMENU({Play, Practise})
+end
+function Menu:TOUCH(x, y) self.menu:handle_touch(x, y) end
+function Menu:DRAG(ox, oy, x, y) self.menu:handle_drag(ox, oy, x, y) end
+function Menu:RELEASE(ox, oy, x, y) self.menu:handle_release(ox, oy, x, y) end
+
+function Menu:DRAW()
+  CLS()
+  DRAW(self.menu)
+  local y = BOXTITLE(Cart.name, 0, 3, 1)
+  PRINT(Cart.episode_name, W/2, y, 0, 1)
+  DRAWFIELD(2,S+6*L)
+end
+
+
+function count(x,y,n)
+  local o = map:get(x,y)
+  if n and o and o.shelfid==n then return 1 end
+  if not n and not o then return 1 end
+  return 0
+end
+
+function count_around(x,y,n)
+  local total= count(x-1,y-1,n)+count(x,y-1,n)+count(x+1,y-1,n)+
+         count(x-1,y,n)+                 count(x+1,y,n)+
+         count(x-1,y+1,n)+count(x,y+1,n)+count(x+1,y+1,n)
+  return total
+end
+
+function score_table(x,y)
+  return 10 * count_around(x,y,3)
+end
+
+function score_light(x,y)
+  return 5 * count_around(x,y,1)
+end
+
+function score_rug(x,y)
+  return 3 * count_around(x,y,nil)
+end
+
+function score_chair(x,y)
+  local t = {}
+  local s = 0
+  local e = map:get(x-1,y)
+  if e and e.shelfid then t[e.shelfid] = true end
+  e = map:get(x+1,y)
+  if e and e.shelfid then t[e.shelfid] = true end
+  e = map:get(x-1,y-1)
+  if e and e.shelfid then t[e.shelfid] = true end
+  e = map:get(x,y-1)
+  if e and e.shelfid then t[e.shelfid] = true end
+  e = map:get(x+1,y-1)
+  if e and e.shelfid then t[e.shelfid] = true end
+  e = map:get(x-1,y+1)
+  if e and e.shelfid then t[e.shelfid] = true end
+  e = map:get(x,y+1)
+  if e and e.shelfid then t[e.shelfid] = true end
+  e = map:get(x+1,y+1)
+  if e and e.shelfid then t[e.shelfid] = true end
+  for k, v in ITEMS(t) do
+    s = s + 5
+  end
+  return s
+end
+
+-- shelfid=1 denotes wall.
+shelf = {
+  { shelfid=2, name="TABLE", spr=SPRCODE("table"), c=6, get_score=score_table },
+  { shelfid=3, name="SEAT", spr=SPRCODE("stool"), c=2, get_score=score_chair },
+  { shelfid=4, name="LAMP", spr=SPRCODE("lamp"), c=3, get_score=score_light },
+  { shelfid=5, name="RUG", spr=SPRCODE("rug"), c=8, get_score=score_rug },
+}
+
+bg = 8
+hi = 0
+msg = ""
+debug = false
+yesterday = 0
+
+function draw_score()
+  local s = 0
+  COLOUR(10)
+  SPR(SPRCODE("SPARKLES"),W-3*S,S/2)
+  PRINT(scores[1],W-3*S,S+L,0,0)
+  s = s + (scores[1] or 0)
+  for k, v in ITEMS(shelf) do
+    COLOUR(v.c)
+    SPR(v.spr, S*k, S/2)
+    PRINT(scores[v.shelfid] or 0,S*k,S+L,0,0)
+    s = s + (scores[v.shelfid] or 0)
+  end
+  COLOUR(13)
+  PRINT(s, W-S, S+L, 0, 0)
+end
+
+function draw_score_full()
+  local s = 0
+  COLOUR(10)
+  SPR(SPRCODE("SPARKLES"),W/3,H-5*S)
+  PRINT(scores[1],2*W/3,H-5*S,0,0)
+  s = s + (scores[1] or 0)
+  for k, v in ITEMS(shelf) do
+    COLOUR(v.c)
+    local y = S*(2+1.5*k)
+    SPR(v.spr, W/3, y)
+    PRINT(scores[v.shelfid] or 0,2*W/3,y,0,0)
+    s = s + (scores[v.shelfid] or 0)
+  end
+  COLOUR(13)
+  PRINT("Total", W/3, H-3*S, 0, 0)
+  PRINT(s, 2*W/3, H-3*S, 0, 0)
+end
+
+function draw_scene()
+  DRAW(map)
+  for i=1,2 do
+    if choices[i] and choices[i].e then
+      DRAW(choices[i].e)
+      if not active_choice and left>0 then
+        TWINKLE()
+        BOX(choices[i].e.x-S,choices[i].e.y-S,2*S)
+      end
+    end
+  end
+  if active_choice then
+    DRAW(active_choice.e)
+  end
+  COLOUR(13)
+  PRINT(msg,W/2,S*3,0,0)
+end
+
+function new_room()
+  msg = "Place an item!"
+  map = MAP()
+  for i=2,7 do
+    map:put(SPRCODE("brick wall top"),i,1).shelfid = 1
+    map:put(SPRCODE("brick wall top"),i,8).shelfid = 1
+  end
+
+  for j=1,8 do
+    map:put(SPRCODE("border right"),1,j).shelfid = 1
+    map:put(SPRCODE("border left"),8,j).shelfid = 1
+  end
+
+  map:anchor(W/2,H/2,0,0)
+end
+
+function random_area()
+  local w = RND(4)
+  if w==4 then
+    w=6
+  end
+  h = 6/w
+  return { x=(RND(h)-1)*w+2, y=(RND(w)-1)*h+2, w=w, h=h }
+end
+
+function new_choices()
+  choices = {}
+  choices[1] = { s=1, o=shelf[RND(#shelf)], z=random_area() }
+  choices[2] = { s=2, o=choices[1].o, z=random_area() }
+  while choices[2].o == choices[1].o do
+    choices[2].o = shelf[RND(#shelf)]
+  end
+  reset_choice(1)
+  reset_choice(2)
+end
+
+function reset_choice(i)
+  choices[i].e = ENT(choices[i].o.spr,(2*i-1)*W/4,H-S*2,choices[i].o.c)
+  choices[i].e.get_score = choices[i].o.get_score
+  choices[i].e.shelfid = choices[i].o.shelfid
+end
+
+
+------------------------------------------------------------------- main
+
+Play = MODE("Today's game")
+Play.icon = SPRCODE("TEAR-OFF CALENDAR")
+Play.bg_tint = 0
+
+function Play:START()
+  scores = {}
+  left = 10
+  local today = DAILYSEED()
+  msg = STR(today)
+  new_room()
+  new_choices()
+  bg = FLR(RND(9))
+end
+
+function Play:DRAG(ox, oy, x, y)
+  if left<=0 then return end
+
+  if active_choice then
+    local mx,my = map:cell(x,y)
+    if map:oob(mx,my) then
+      active_choice.e.x = x
+      active_choice.e.y = y
+    else
+      active_choice.e.x, active_choice.e.y = map:coord(mx,my)
+    end
+  else
+    if oy>10*16 then
+      if ox>W/2 then
+        active_choice = choices[2]
+        choices[2] = nil
+      else
+        active_choice = choices[1]
+        choices[1] = nil
+      end
+    end
+  end
+end
+
+function same_type(shelfid,mx,my)
+  local f = map:get(mx,my)
+  if not f or not f.shelfid then return end
+  return shelfid==f.shelfid
+end
+
+function update_score()
+  scores = {0}
+  for i=2,map.sx-1 do
+    for j=2,map.sy-1 do
+      local e = map:get(i,j)
+      if e then
+        scores[e.shelfid] = (scores[e.shelfid] or 0) + e.get_score(i,j)
+
+        if same_type(e.shelfid,map.sx+1-i,j) then
+          scores[1] = scores[1] + 10
+        end
+        if same_type(e.shelfid,i,map.sy+1-j) then
+          scores[1] = scores[1] + 10
+        end
+        if same_type(e.shelfid, map.sx+1-i,map.sy+1-j) then
+          scores[1] = scores[1] + 10
+        end
+      end
+    end
+  end
+end
+
+function reset_active_choice()
+  choices[active_choice.s] = active_choice
+  reset_choice(active_choice.s)
+  active_choice = nil
+end
+
+function Play:RELEASE()
+  if left==0 then
+    SAVE(scores)
+    GO(GameOver)
+  end
+
+  if not active_choice then return end
+
+  occupied, mx, my = map:under(active_choice.e)
+  if occupied then reset_active_choice() return end
+
+  if mx<active_choice.z.x or my<active_choice.z.y
+  or mx>=active_choice.z.x+active_choice.z.w
+  or my>=active_choice.z.y+active_choice.z.h
+  then reset_active_choice() return end
+
+  map:grab(active_choice.e)
+  active_choice = nil
+  update_score()
+  left = left - 1
+
+  if left==0 then
+    msg = "Finished!"
+    TIMER(3)
+    return
+  end
+
+  if left==1 then
+    msg = "Last item!"
+    new_choices()
+    return
+  end
+
+  msg = STR(left).." items left"
+  new_choices()
+  return
+
+end
+
+function Play:UPDATE()
+  if left==0 and TIMER()<0 then
+    SAVE(scores)
+    GO(GameOver)
+  end
+end
+
+function Play:DRAW()
+  BORDER(bg)
+  CLS(bg)
+  COLOUR(0)
+  draw_scene()
+  if active_choice then
+    local x, y, w, h = map:coord(active_choice.z.x,active_choice.z.y,active_choice.z.w,active_choice.z.h)
+    COLOUR(9)
+    BLOCK(x,y,w,h)
+  end
+  draw_score()
+end
+
+---------------------------------------------------------------- game over
+
+GameOver = MODE("Game over")
+
+function GameOver:START()
+  scores = LOAD()
+end
+
+function GameOver:TOUCH(x,y,isNew)
+  GO(Menu)
+end
+
+function GameOver:DRAW()
+  BORDER(bg)
+  CLS(bg)
+  COLOUR(0)
+  PRINT("Your score", W/2, S,0,0)
+  draw_score_full()
+end
+
+------------------------------------------------------------------- practise
+
+Practise = MODE("Random game", Play)
+Practise.icon = SPRCODE("BENTO BOX")
+Practise.bg_tint = 9
+
+function Practise:START()
+  scores = {}
+  left = 10
+  RANDOMIZE()
+  new_room()
+  new_choices()
+  bg = FLR(RND(9))
+end
+
+instructions =  {
+    {"",0,  "DESIGN A PERFECT ROOM BY PLACING 10 ITEMS OF FURNITURE IN THE BEST PLACES"},
+    {"1f9f1",3, "THE WALLS"},
+    {"1f532",5, "TABLES SCORE 5 FOR EVERY CHAIR AROUND THEM"},
+    {"2638",7, "RUGS SCORE 2 FOR EVERY EMPTY SPACE AROUND THEM"},
+    {"1f56f",4,  "LIGHTS SCORE 5 FOR EVERY WALL NEXT TO THEM"},
+    {"1fa91",3,  "CHAIRS SCORE 5 FOR EVERY DIFFERENT ITEM AROUND THEM"},
+    {"",0,   "PLACE ANY TWO ITEMS OF THE SAME KIND"..
+             "IN SYMMETRICAL POSITIONS ABOUT THE ROOM'S HORIZONTAL OR VERTICAL AXIS"..
+             "FOR A BONUS"}
+  }
+
+FIELD(1,SPRCODE("table"),"Tables","Put next to chairs")
+FIELD(2,SPRCODE("stool"),"Chairs","Put next to lots of different things")
+FIELD(3,SPRCODE("rug"),"Rugs","Put in empty spaces")
+FIELD(4,SPRCODE("lamp"),"Lamps","Put against walls",3)
+FIELD(5,SPRCODE("SPARKLES"),"Symmetry","Put like items opposite each other")
+
+
+Cart = {
+  start=Menu,
+  name="Snug",
+  info="a game of interior design",
+  api="i5"
+}
+
+return Cart

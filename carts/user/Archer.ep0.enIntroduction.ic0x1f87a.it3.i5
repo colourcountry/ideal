@@ -1,14 +1,16 @@
 Cart = EPISODE("Archer")
 
+local t=2
 Cart.Main.levels = {
   {
-    tint=0,
+    tint=t,
+    name="Archer",
     hint=[[Cursed masks have brought bad weather to the village.
 
 Reg needs to destroy them or the summer fair will be ruined!]],
   },
   {
-    tint=0,
+    tint=t,
     hint=[[Reg can collect arrows to help him.
 
 When used, they move in the direction indicated.
@@ -21,7 +23,7 @@ Arrows can't harm the masks, but they can detonate bombs.]],
     }
   },
   {
-    tint=0,
+    tint=t,
     hint=[[Reg can push bombs around, but not masks.
 
 The village doesn't need these bombs anyway, score points for clearing them.
@@ -29,12 +31,12 @@ The village doesn't need these bombs anyway, score points for clearing them.
 Collect fruit for more points.]],
     plan={
       "@b    ",
-      " TTT o",
+      " LTR o",
       " bf< >",
     }
   },
   {
-    tint=0,
+    tint=t,
     hint=[[Reg can't pick up an arrow while holding another.]],
     plan={
       "@vvv f",
@@ -43,10 +45,10 @@ Collect fruit for more points.]],
     }
   },
   {
-    tint=0,
+    tint=t,
     hint=[[For a faultless run, avoid destroying fruit or arrows, or using arrows to no effect.
 
-Now you're ready for the first episode!
+Now you're ready to venture into the Cellars!
 
 Come back here if you need a hint.]],
     plan={
@@ -56,7 +58,7 @@ Come back here if you need a hint.]],
     }
   },
   {
-    tint=0,
+    tint=t,
     hint=[[Bombs can detonate each other.]],
     plan={
       "@  b ",
@@ -65,7 +67,7 @@ Come back here if you need a hint.]],
     }
   },
   {
-    tint=0,
+    tint=t,
     hint=[[Masks can be moved around with arrows.]],
     plan={
       "@ >>>",

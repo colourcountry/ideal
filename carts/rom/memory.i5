@@ -3,7 +3,7 @@ Main = MODE("Main")
 function Main:START(secrets)
   if secrets then
     cart = secrets.cart
-    memory = secrets.memory[cart.id].fields
+    memory = secrets.memory[cart.id] and secrets.memory[cart.id].fields
     switch_cart = secrets.switch_cart
     draw_field = secrets.draw_field
   end
@@ -15,9 +15,16 @@ end
 
 function Main:DRAW()
   CLS()
-  BOXTITLE(cart.name, 0, 3, 1)
+  local y = BOXTITLE(cart.name, 0, 3, 1)
+  PRINT(cart.episode_name, W/2, y, 0, 1)
 
-  y = S*4
+  y = y + L
+
+  if not memory then
+    PRINT("Memory is empty",W/2,H/2,0,0)
+    return
+  end
+
   for i=1,#memory do
     y = y + draw_field(memory[i],y,true) + L
   end

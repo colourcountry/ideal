@@ -1,0 +1,39 @@
+Cart = EPISODE("Archer")
+
+local f = SPRCODE("BANANA")
+local t = 5
+
+Cart.Main.levels = {
+  {
+    name="The Monument",
+    hint=[[This is a local landmark. You can go inside and climb right to the top.
+
+Funny, I don't remember the monument being here before the masks showed up.]],
+    fruit=f, tint=t,
+    plan={
+      "@ > b",
+      " o b ",
+      "v   <",
+    }
+  },
+  {
+    fruit=f, tint=t,
+    plan={
+      "@v  v",
+      " o>of",
+      "bv> b",
+    }
+  },
+  {
+    fruit=f, tint=t,
+    plan={
+      " o o ^>",
+      "< o o ^",
+      " o @ o>",
+      "  b o  ",
+      "<     <"
+    }
+  },
+}
+
+return Cart

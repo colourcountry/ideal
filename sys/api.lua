@@ -340,6 +340,9 @@ function api.SPLIT(strg, chars, at)
   local l = {}
   while #strg>chars do
     local c, skip = chars, 0
+    while strg:sub(1,1)==" " do
+      strg = strg:sub(2)
+    end
     if (at) then
       local test = strg:sub(1,c):reverse()
       local s, e = test:find(at)
@@ -356,6 +359,9 @@ function api.SPLIT(strg, chars, at)
     l[#l+1] =  strg:sub(1, c-skip)
     strg = strg:sub(c+1,-1)
   end
+  while strg:sub(1,1)==" " do
+    strg = strg:sub(2)
+  end
   l[#l+1] = strg
   return l
 end
@@ -366,7 +372,9 @@ function api.BLOCK(x, y, w, h)
   end
   lg.push("all")
   lg.setShader()
-  lg.setColor(cur_fg)
+  local d = cur_fg
+  d[4] = 0.5
+  lg.setColor(d)
   lg.rectangle("fill",x*units,y*units,w*units,h*units)
   lg.pop()
 end
@@ -462,12 +470,13 @@ function api.POLAR(x,y,ox,oy)
   return math.sqrt(dx*dx+dy*dy), math.deg(math.atan2(dy,dx))
 end
 
-function api.DAILY()
+function api.DAILYSEED()
   local d = tonumber(os.date("%Y%m%d"))
   api.RANDOMIZE(d)
 end
 
 function api.RANDOMIZE(seed)
+  seed = seed or love.timer.getTime()*1000
   api.LOG("Resetting RNG to "..tostring(seed))
   love.math.setRandomSeed(seed)
   return d
@@ -578,17 +587,18 @@ function draw_field(item,y,include_desc)
   end
   api.COLOUR(13)
   api.PRINT(item.name,margin+text_indent,y,1,-1)
+  local h = 0
   if item.desc and item.desc~="" and include_desc and not item.value then
     local lines = api.SPLIT(api.STR(item.desc),text_width/api.L," ")
     api.COLOUR(8)
-    sugar.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
-    y = y + api.L*#lines
+    h = sugar.PRINTLINES(lines,margin+text_indent,y,1,1)
+    y = y + h
   end
   if item.value then
     local lines = api.SPLIT(api.STR(item.value),text_width/api.L," ")
     api.COLOUR(3)
-    sugar.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
-    y = y + api.L*#lines
+    h = sugar.PRINTLINES(lines,margin+text_indent,y+api.L,1,-1)
+    y = y + h
   end
   api.COLOUR(0)
   return y - oy + api.L
@@ -693,7 +703,12 @@ function api.SAVE(...)
   if #s==0 then
     memory[cur_cartid].state = nil -- json library doesn't like empty arrays
   else
-    memory[cur_cartid].state = s
+    if #s==1 and type(s[1]) == 'table' then
+      -- pass a single table as argument, since this is otherwise invalid, we'll unpack it for you
+      memory[cur_cartid].state = s[1]
+    else
+      memory[cur_cartid].state = s
+    end
   end
   save_memory(cur_cartid)
 end
@@ -702,8 +717,6 @@ function api.TIMER(s)
   local now = love.timer.getTime()
   if s then
     timer_end_time = now+s
-  else
-    timer_end_time = false
   end
   if timer_end_time then
     return timer_end_time-now

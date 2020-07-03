@@ -59,7 +59,7 @@ function sugar.PRINTLINES(strgs, x, y, anchor_x, anchor_y)
     api.PRINT(s, x, y, 1, 1)
     y = y + api.L
   end
-  return #strgs
+  return #strgs*api.L
 end
 
 sugar.CIRCLE = api.RING
@@ -181,11 +181,12 @@ function sugar.MAINMENU(modelist)
       name=modelist[i].name,
       icon=modelist[i].icon,
       icon_tint=modelist[i].icon_tint,
+      bg_tint=modelist[i].bg_tint,
       action=function() api.GO(modelist[i]) end
     }
   end
   m[#m+1] = { name="Info", icon=spr_info, action=api.MEMORY }
-  m[#m+1] = { name="Eject", icon=spr_eject, action=api.EJECT }
+  m[#m+1] = { name="Eject", icon=spr_eject, icon_tint=11, action=api.EJECT }
   return api.MENU(m)
 end
 

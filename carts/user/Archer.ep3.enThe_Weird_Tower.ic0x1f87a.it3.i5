@@ -1,0 +1,37 @@
+Cart = EPISODE("Archer")
+
+local f = SPRCODE("RED APPLE")
+local t = 9
+
+Cart.Main.levels = {
+  {
+    name="The Weird Tower",
+    hint=[[I don't remember this place at all, even though it's right in the village. It's creepy.
+
+Isn't this just where the church used to be?]],
+    fruit=f, tint=t,
+    plan={
+      "o   X   ",
+      " o  X o ",
+      "v   T   ",
+      "TTR   o ",
+      "    X   ",
+      " @  X o ",
+      "    T   ",
+    }
+  },
+  {
+    fruit=f, tint=t,
+    plan={
+      "        ",
+      "        ",
+      "        ",
+      "        ",
+      "        ",
+      " @    o ",
+      "        ",
+    }
+  },
+}
+
+return Cart

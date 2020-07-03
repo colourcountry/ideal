@@ -48,22 +48,6 @@ function map:DRAW()
   for e in self:ITEMS() do
     e:DRAW()
   end
-  --[[ FIXME do I still want this
-  if self.hx and self.hy then
-    api.COLOUR(1)
-    api.CIRCLE(self.hx*S,self.hy*S,8)
-  end
-  if self.zx and self.zy then
-    if not self.zw then
-      self.zw = 1
-    end
-    if not self.zh then
-      self.zh = 1
-    end
-    api.COLOUR(5)
-    api.RECT(self.zx*S-8,self.zy*S-8,self.zw*S,self.zh*S)
-  end
-  ]]
   self.canvas:stop()
   api.COLOUR(0)
   self.canvas:paste(-self.cx,-self.cy)
@@ -121,7 +105,7 @@ function map:put_entity(e,mx,my)
     self[mx] = {}
   end
   self[mx][my] = e
-  return self[mx][my]
+  return e
 end
 
 function map:put(spr,mx,my,c)
@@ -179,8 +163,12 @@ function map:empty()
   self.sy = 0
 end
 
-function map:coord(x,y)
-  return x+self.cx, y+self.cy
+function map:coord(mx,my,mw,mh)
+  -- Return the centre of a single map cell,
+  -- or a box encompassing multiple map cells
+  local xoff = (mw and -S/2) or 0
+  local yoff = (mh and -S/2) or 0
+  return mx*S-self.cx+xoff, my*S-self.cy+yoff, mw and mw*S, mh and mh*S
 end
 
 function map:cell(x,y)
@@ -200,28 +188,8 @@ function map:under(e) -- given an entity, what map entity is at the same place
   return self:get(mx,my), mx, my
 end
 
-function map:highlight(mx,my)
-  if mx and my then
-    if mx>0 and my>0 and mx<=self.sx and my<=self.sy then
-      self.hx, self.hy = mx, my
-      return
-    end
-  end
-  self.hx, self.hy = nil, nil
-end
-
-function map:zone(mx,my,mw,mh)
-  self.zx, self.zy, self.zw, self.zh = mx, my, mw, mh
-end
-
-function map:grab(e,if_empty,in_zone)
-  local mx, my = self:coord(e.x,e.y)
-  if if_empty and self:get(mx,my) then
-    return nil
-  end
-  if in_zone and (mx<self.zx or my<self.zy or mx>=self.zx+self.zw or my>=self.zy+self.zh) then
-    return nil
-  end
+function map:grab(e)
+  local mx,my = self:cell(self:whereis(e))
   return self:put_entity(e,mx,my)
 end
 

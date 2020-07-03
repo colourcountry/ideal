@@ -27,14 +27,16 @@ Bombs = LOOP()
 
 Legend = {
   ["b"]={spr=Bomb_spr,        tint=1,   loops={Bombs,Movables}},
-  ["o"]={spr=Ogre_spr,        tint=-5,  loops={Ogres}},
+  ["o"]={spr=Ogre_spr,        tint=-8,  loops={Ogres}},
   ["f"]={spr=Fruit_spr,       tint=0,   loops={Edibles,Breakables}},
   ["<"]={spr=Arrow_spr.left,  tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,-shoot_speed,0) end},
   ["^"]={spr=Arrow_spr.up,    tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,0,-shoot_speed) end},
   [">"]={spr=Arrow_spr.right, tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,shoot_speed,0) end},
   ["v"]={spr=Arrow_spr.down,  tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,0,shoot_speed) end},
-  ["T"]={spr=SPRCODE("brick wall top"),tint=0},
-  ["|"]={spr=SPRCODE("brick wall"),tint=0},
+  ["L"]={spr=SPRCODE("brick wall top left"),tint=-1},
+  ["T"]={spr=SPRCODE("brick wall top"),tint=-1},
+  ["R"]={spr=SPRCODE("brick wall top right"),tint=-1},
+  ["|"]={spr=SPRCODE("brick wall"),tint=-1},
   ["X"]={spr=SPRCODE("FULL BLOCK"),tint=13},
   ["@"]={spr=Redge.stop,      tint=0},
 }
@@ -50,6 +52,14 @@ Records = {
 }
 FIELD(5,nil,"Credits","IDEALsoft 19828")
 FIELD(6,nil,"Inspired by","Saracen (C64)")
+
+function get_tint(p,l)
+  local tint = p.tint or 0
+  if tint<0 then
+    return (tint + 1 + l)%13
+  end
+  return tint
+end
 
 function new_level(i,spec)
   local plan = spec.plan
@@ -75,11 +85,7 @@ function new_level(i,spec)
       local p = Legend[here]
 
       if p then
-        local tint = p.tint or 0
-        if tint<0 then
-          tint = (tint + level_tint)%13
-        end
-
+        local tint = get_tint(p,level_tint)
         local e = map:put(p.spr,i+1,j+1,tint)
 
         if p.loops then
@@ -98,13 +104,14 @@ function new_level(i,spec)
         end
       end
     end
-    map:put(Legend["T"].spr,i+1,1,(level_tint+Legend["T"].tint)%13)
-    map:put(Legend["T"].spr,i+1,h+2,(level_tint+Legend["T"].tint)%13)
+    local wall_tint = get_tint(Legend["T"],level_tint)
+    map:put(Legend["T"].spr,i+1,1,wall_tint)
+    map:put(Legend["T"].spr,i+1,h+2,wall_tint)
   end
 
   for j=1,h+2 do
-    map:put(SPRCODE("border right"),1,j,tint)
-    map:put(SPRCODE("border left"),w+2,j,tint)
+    map:put(SPRCODE("border right"),1,j,wall_tint)
+    map:put(SPRCODE("border left"),w+2,j,wall_tint)
   end
   map:anchor(W/2,H/2)
 
@@ -437,6 +444,11 @@ function Main:KEY(ch)
     GO(LevelIntro)
     return true
   end
+  if ch=="backspace" or ch=="f5" then
+    LOG("TRAINER: restart without penalty")
+    GO(Main)
+    return true
+  end
 end
 
 ------------------------------------------------------------------- game over
@@ -494,14 +506,13 @@ function LevelIntro:DRAW()
     local h = 0
     COLOUR(3)
     PRINT(STR(level).."/"..STR(#Main.levels), W/2, 0, 0, 1)
-    COLOUR(13)
-    if Main.levels[level].hint then
-      local hint = SPLIT(Main.levels[level].hint,W/L," ")
-      h = (#hint+1)*L
-      PRINTLINES(hint, W/2, H/3, 0, 0)
-    end
     COLOUR(0)
-    TITLE(Main.levels[level].name or "", W/2, (H-h)/2-S*2, 0, 0)
+    local title = SPLIT(Main.levels[level].name or "",W/L," ")
+    th = PRINTLINES(title, W/2, S*2, 0, 1)
+    COLOUR(13)
+    local hint = SPLIT(Main.levels[level].hint or "",W/L," ")
+    hh = PRINTLINES(hint, W/2, H/2, 0, 0)
+
   else
     TWINKLE()
     if faults==0 then
@@ -513,8 +524,8 @@ function LevelIntro:DRAW()
     DRAW(player)
   end
   COLOUR(8)
-  PRINT("score "..score, W/2, H/2+S*4, 0, 0)
-  PRINT("faults "..faults, W/2, H/2+S*5, 0, 0)
+  PRINT("score "..score, W/2, H-S*2, 0, 0)
+  PRINT("faults "..faults, W/2, H-S, 0, 0)
   DRAWFIELD(2,H-S*2)
 end
 
