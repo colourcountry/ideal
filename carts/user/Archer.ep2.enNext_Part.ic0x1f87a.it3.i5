@@ -1,14 +1,30 @@
 Cart = EPISODE("Archer")
 
+local f = SPRCODE("BANANA")
+
 Cart.Main.plans = {
   {
-    name="Level 2-1",
     plan={
       "@    ",
       "Tb o ",
       "<  v ",
     }
   },
+  {
+    plan={
+      "@ > b",
+      " o b ",
+      "v   <",
+    }
+  },
+  {
+    plan={
+      "@v  v",
+      " o>of",
+      "bv> b",
+    }
+  },
+
 }
 
 return Cart

@@ -33,8 +33,9 @@ Legend = {
   ["^"]={spr=Arrow_spr.up,    tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,0,-shoot_speed) end},
   [">"]={spr=Arrow_spr.right, tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,shoot_speed,0) end},
   ["v"]={spr=Arrow_spr.down,  tint=3,   loops={Arrows,Breakables},   setup=function(e) VEL(e,0,shoot_speed) end},
-  ["T"]={spr=SPRCODE("brick wall top"),tint=-16},
-  ["|"]={spr=SPRCODE("brick wall"),tint=-16},
+  ["T"]={spr=SPRCODE("brick wall top"),tint=0},
+  ["|"]={spr=SPRCODE("brick wall"),tint=0},
+  ["X"]={spr=SPRCODE("FULL BLOCK"),tint=13},
   ["@"]={spr=Redge.stop,      tint=0},
 }
 
@@ -50,8 +51,17 @@ Records = {
 FIELD(5,nil,"Credits","IDEALsoft 19828")
 FIELD(6,nil,"Inspired by","Saracen (C64)")
 
-function new_level(i,plan,level_tint)
-  if not plan then ERROR("Bad plan","No plan for level",i) return end
+function new_level(i,spec)
+  local plan = spec.plan
+  if not plan then return end
+
+  local level_tint = spec.tint or i*3
+
+  if spec.fruit then
+    Legend["f"].spr = spec.fruit
+  else
+    Legend["f"].spr = Fruit_spr
+  end
 
   local h = #plan
   local w = #plan[1]
@@ -67,7 +77,7 @@ function new_level(i,plan,level_tint)
       if p then
         local tint = p.tint or 0
         if tint<0 then
-          tint = tint + level_tint
+          tint = (tint + level_tint)%13
         end
 
         local e = map:put(p.spr,i+1,j+1,tint)
@@ -88,8 +98,8 @@ function new_level(i,plan,level_tint)
         end
       end
     end
-    map:put(SPRCODE("brick wall top"),i+1,1,level_tint-16)
-    map:put(SPRCODE("brick wall top"),i+1,h+2,level_tint-16)
+    map:put(Legend["T"].spr,i+1,1,(level_tint+Legend["T"].tint)%13)
+    map:put(Legend["T"].spr,i+1,h+2,(level_tint+Legend["T"].tint)%13)
   end
 
   for j=1,h+2 do
@@ -149,7 +159,7 @@ function Main:START()
   score = state[2] or 0
   faults = state[3] or 0
   POST(1,level)
-  player = new_level(level,self.levels[level].plan,self.levels[level].tint or level*2)
+  player = new_level(level,self.levels[level])
   restart_button = ENT(SPRCODE("LEFTWARDS ARROW WITH HOOK"),W/2,S)
   active_arrows = LOOP()
   player_arrows = LOOP()
@@ -414,8 +424,18 @@ end
 
 function Main:KEY(ch)
   if ch=="n" then
-    LOG("TRAINER: Level skipped")
+    LOG("TRAINER: next level")
+    level = level + 1
+    SAVE(level,score,faults)
     GO(LevelIntro)
+    return true
+  end
+  if ch=="p" and level>1 then
+    LOG("TRAINER: previous level")
+    level = level - 1
+    SAVE(level,score,faults)
+    GO(LevelIntro)
+    return true
   end
 end
 
@@ -478,7 +498,7 @@ function LevelIntro:DRAW()
     if Main.levels[level].hint then
       local hint = SPLIT(Main.levels[level].hint,W/L," ")
       h = (#hint+1)*L
-      PRINTLINES(hint, W/2, (H-h)/2, 0, 0)
+      PRINTLINES(hint, W/2, H/3, 0, 0)
     end
     COLOUR(0)
     TITLE(Main.levels[level].name or "", W/2, (H-h)/2-S*2, 0, 0)

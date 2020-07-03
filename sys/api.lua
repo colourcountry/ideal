@@ -348,6 +348,11 @@ function api.SPLIT(strg, chars, at)
         c = c-s+1
       end
     end
+    local n, e = strg:find("\n")
+    if (n and n<c) then
+      skip = 1
+      c = n
+    end
     l[#l+1] =  strg:sub(1, c-skip)
     strg = strg:sub(c+1,-1)
   end
@@ -441,6 +446,7 @@ end
 
 function api.GO(mode)
   local id = (cur_cart and cur_cart.id) or cur_cartid
+  api.LOG("GO:",id,"/",mode.name)
   switch_cart(id,mode.name)
 end
 
@@ -595,17 +601,17 @@ function api.DRAWFIELD(loc,y)
 end
 
 function api.FIELD(loc,icon,name,desc,rule,init_value)
-  api.LOG("Setting up field, memory is",memory[cur_cartid])
   if not memory[cur_cartid] then memory[cur_cartid] = {} end
   if not memory[cur_cartid].fields then memory[cur_cartid].fields = {} end
 
   local field = memory[cur_cartid].fields[loc]
   if field then
-    api.LOG("Retaining existing value ",field.value," for ",name)
+    api.LOG("FIELD: existing field",loc,name,"=",field.value)
     field.name=name
     field.desc=desc
     field.icon=icon
   else
+    api.LOG("FIELD: new field",loc,name,"=",init_value)
     memory[cur_cartid].fields[loc] = { rule=rule, value=init_value, name=name, desc=desc, icon=icon }
   end
   save_memory(cur_cartid)
@@ -649,12 +655,11 @@ postrules = { -- FIXME: nicer way to specify the rule?
 }
 
 function api.POST(loc,value)
-  api.LOG("POST",loc,value)
   if loc==0 then
     safe_value = validate_state(value)
     if not memory[cur_cartid] then memory[cur_cartid] = {} end
     memory[cur_cartid].state = safe_value
-    --api.LOG("...memory now",memory[cur_cartid])
+    api.LOG("SAVE:",safe_value)
     save_memory(cur_cartid)
     return
   end
@@ -666,14 +671,19 @@ function api.POST(loc,value)
     return
   end
   local rule = postrules[field.rule or 1]
-  field.value = rule(field.value,value)
-  --api.LOG("...memory now",memory[cur_cartid])
-  save_memory(cur_cartid)
+  local new_value = rule(field.value,value)
+  if new_value == field.value then
+    api.LOG("POST:",loc,field.name,"unchanged by rule",field.rule,", old",field.value,"new",value)
+  else
+    api.LOG("POST:",loc,field.name,"now",new_value,"by rule",field.rule,", old",field.value,"new",value)
+    field.value = new_value
+    save_memory(cur_cartid)
+  end
 end
 
 function api.LOAD()
   local r = memory[cur_cartid] and memory[cur_cartid].state
-  --api.LOG("Loaded state ",r)
+  api.LOG("LOAD: ",r)
   return r or {}
 end
 

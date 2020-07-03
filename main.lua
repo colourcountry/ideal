@@ -19,7 +19,6 @@ function love.load()
 
     love.filesystem.createDirectory("memory/user") -- FIXME: allow other dirs to create memory
     local path = "memory/"..cartid
-    api.LOG(path,": writing memory",j)
     love.filesystem.write(path,j)
   end
 
