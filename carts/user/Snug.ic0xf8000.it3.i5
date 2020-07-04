@@ -92,13 +92,17 @@ function draw_score()
   local s = 0
   COLOUR(10)
   SPR(SPRCODE("SPARKLES"),W-3*S,S/2)
-  PRINT(scores[1],W-3*S,S+L,0,0)
-  s = s + (scores[1] or 0)
+  if (scores[1] or 0)>0 then
+    PRINT(scores[1],W-3*S,S+L,0,0)
+    s = s + scores[1]
+  end
   for k, v in ITEMS(shelf) do
     COLOUR(v.c)
-    SPR(v.spr, S*k, S/2)
-    PRINT(scores[v.shelfid] or 0,S*k,S+L,0,0)
-    s = s + (scores[v.shelfid] or 0)
+    SPR(v.spr, S*1.2*k, S/2)
+    if (scores[v.shelfid] or 0)>0 then
+      PRINT(scores[v.shelfid],S*1.2*k,S+L,0,0)
+      s = s + scores[v.shelfid]
+    end
   end
   COLOUR(13)
   PRINT(s, W-S, S+L, 0, 0)
@@ -108,7 +112,7 @@ function draw_score_full()
   local s = 0
   COLOUR(10)
   SPR(SPRCODE("SPARKLES"),W/3,H-5*S)
-  PRINT(scores[1],2*W/3,H-5*S,0,0)
+  PRINT(scores[1] or 0,2*W/3,H-5*S,0,0)
   s = s + (scores[1] or 0)
   for k, v in ITEMS(shelf) do
     COLOUR(v.c)
@@ -137,11 +141,11 @@ function draw_scene()
     DRAW(active_choice.e)
   end
   COLOUR(13)
-  PRINT(msg,W/2,S*3,0,0)
+  PRINTLINES(SPLIT(msg,W/L," "),W/2,S*3.2,0,-1)
 end
 
 function new_room()
-  msg = "Place an item!"
+  msg = "Place an item in the marked area"
   map = MAP()
   for i=2,7 do
     map:put(SPRCODE("brick wall top"),i,1).shelfid = 1
@@ -167,8 +171,9 @@ end
 
 function new_choices()
   choices = {}
-  choices[1] = { s=1, o=shelf[RND(#shelf)], z=random_area() }
-  choices[2] = { s=2, o=choices[1].o, z=random_area() }
+  zone = random_area()
+  choices[1] = { s=1, o=shelf[RND(#shelf)] }
+  choices[2] = { s=2, o=choices[1].o }
   while choices[2].o == choices[1].o do
     choices[2].o = shelf[RND(#shelf)]
   end
@@ -268,9 +273,9 @@ function Play:RELEASE()
   occupied, mx, my = map:under(active_choice.e)
   if occupied then reset_active_choice() return end
 
-  if mx<active_choice.z.x or my<active_choice.z.y
-  or mx>=active_choice.z.x+active_choice.z.w
-  or my>=active_choice.z.y+active_choice.z.h
+  if mx<zone.x or my<zone.y
+  or mx>=zone.x+zone.w
+  or my>=zone.y+zone.h
   then reset_active_choice() return end
 
   map:grab(active_choice.e)
@@ -280,7 +285,7 @@ function Play:RELEASE()
 
   if left==0 then
     msg = "Finished!"
-    TIMER(3)
+    TIMER(5)
     return
   end
 
@@ -290,7 +295,7 @@ function Play:RELEASE()
     return
   end
 
-  msg = STR(left).." items left"
+  msg = STR(left).." left"
   new_choices()
   return
 
@@ -308,8 +313,8 @@ function Play:DRAW()
   CLS(bg)
   COLOUR(0)
   draw_scene()
-  if active_choice then
-    local x, y, w, h = map:coord(active_choice.z.x,active_choice.z.y,active_choice.z.w,active_choice.z.h)
+  if zone then
+    local x, y, w, h = map:coord(zone.x,zone.y,zone.w,zone.h)
     COLOUR(9)
     BLOCK(x,y,w,h)
   end

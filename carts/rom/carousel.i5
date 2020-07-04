@@ -76,6 +76,14 @@ function Main:START(secrets)
     }
   end
 
+  cartItems[#cartItems+1] = {
+    name = "Exit",
+    icon = SPRCODE("POWER SYMBOL"),
+    icon_tint = 13,
+    bg_tint = 0,
+    action = quit
+  }
+
   main_menu = MENU(cartItems)
   cur_menu = main_menu
   cur_msg = messages.select
@@ -108,6 +116,10 @@ end
 
 function Main:RELEASE(ox,oy,x,y)
   cur_menu:handle_release(ox,oy,x,y)
+end
+
+function Main:ESCAPE()
+  quit()
 end
 
 return {

@@ -186,7 +186,7 @@ function sugar.MAINMENU(modelist)
     }
   end
   m[#m+1] = { name="Info", icon=spr_info, action=api.MEMORY }
-  m[#m+1] = { name="Eject", icon=spr_eject, icon_tint=11, action=api.EJECT }
+  m[#m+1] = { name="Eject", icon=spr_eject, icon_tint=13, bg_tint=0, action=api.EJECT }
   return api.MENU(m)
 end
 

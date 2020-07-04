@@ -25,7 +25,7 @@ function menu:init()
 
   local validItems = {}
   for i=1,#self.items do
-    self.items[i].highlight_colour=((self.items[i].icon_tint or 0)+((self.items[i].bg_tint or 6))) % 13
+    self.items[i].highlight_colour=((self.items[i].icon_tint or 0)+((self.items[i].bg_tint or 5))) % 13
     if not self.items[i].name then
       api.LOG("ERROR: menu item requires a 'name': ",self.items[i])
     else

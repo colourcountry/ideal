@@ -28,6 +28,7 @@ sugar = require("sys/sugar") -- Commands that could be done in the cart but are 
 
 carts={}
 memory={}
+debug_logs = {}
 
 -- remind myself which globals i define further down
 
@@ -149,6 +150,7 @@ end
 
 function love.update()
   update_time = love.timer.getTime()
+  debug_logs = {}
   if mode_end_time and mode_end_time<update_time then
     api.LOG(update_time,": over ",mode_panic_time," seconds elapsed since mode began, panic!")
     api.RESET()
@@ -160,8 +162,8 @@ function love.update()
     handle_drag(mouse_touch_id,love.mouse.getX(),love.mouse.getY())
   end
   touches = love.touch.getTouches()
-  for id, v in pairs(touches) do
-    local x,y = love.touch.getPosition(v)
+  for i, id in pairs(touches) do
+    local x,y = love.touch.getPosition(id)
     handle_drag(id,x,y)
   end
 
@@ -200,7 +202,18 @@ function love.draw()
     drawTimers()
     local screenW,screenH = lg.getDimensions()
     lg.printf("d e v e l o p m e n t   m o d e",0,screenH/3,screenW,"center")
-    lg.printf(debug_scancode,0,screenH/2,screenW,"center")
+    lg.printf(debug_scancode,0,screenH/4,screenW,"center")
+
+    y = screenH/2
+    for i=1,#debug_logs do
+      lg.print(debug_logs[i],0,y)
+      y=y+12
+    end
+
+    for k,v in pairs(cur_touches) do
+      lg.print("Touch "..tostring(k)..": "..math.floor(v.ox)..","..math.floor(v.oy).." -> "..math.floor(v.x)..","..math.floor(v.y),0,y)
+      y=y+12
+    end
   end
 end
 
@@ -214,12 +227,12 @@ keys = {
 
 function love.keypressed(key, scancode, isRepeat)
   if (scancode=='escape' or scancode=='acback') then
-    if cur_cart and cur_cart.ESCAPE then
-      cur_cart:ESCAPE()
-      return
+    if cur_mode.ESCAPE then
+      cur_mode:ESCAPE()
     else
       api.EJECT()
     end
+    return
   end
   local k = keys[scancode]
   if (k and cur_mode.TOUCH) then

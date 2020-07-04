@@ -137,6 +137,7 @@ function api.LOG(...)
     s = s..api.STR(v).." "
   end
   print(s)
+  debug_logs[#debug_logs+1] = s
 end
 
 function api.ITEMS(iterable)
@@ -154,6 +155,7 @@ end
 
 function api.TOUCH(x, y)
   if cur_mode.TOUCH then
+    api.LOG("Touch",math.floor(x),math.floor(y))
     cur_mode:TOUCH(x, y)
   end
 end
