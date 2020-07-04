@@ -3,7 +3,7 @@ Cart = EPISODE("Archer")
 local f = SPRCODE("BANANA")
 local t = 5
 
-Cart.Main.levels = {
+Cart.Play.levels = {
   {
     name="The Monument",
     hint=[[This is a local landmark. You can go inside and climb right to the top.

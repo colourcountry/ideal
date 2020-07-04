@@ -3,7 +3,7 @@ Cart = EPISODE("Archer")
 local f = SPRCODE("STRAWBERRY")
 local t = 0
 
-Cart.Main.levels = {
+Cart.Play.levels = {
   {
     name="The Cellars",
     hint=[[The masks first appeared in these abandoned cellars.

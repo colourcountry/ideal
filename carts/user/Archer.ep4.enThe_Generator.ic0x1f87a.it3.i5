@@ -3,7 +3,7 @@ Cart = EPISODE("Archer")
 local f = SPRCODE("WATERMELON")
 local t = 7
 
-Cart.Main.levels = {
+Cart.Play.levels = {
   {
     name="The Generator",
     hint=[[]],

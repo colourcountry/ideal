@@ -50,9 +50,9 @@
      inkscape:document-rotation="0"
      inkscape:current-layer="layer1"
      inkscape:document-units="cm"
-     inkscape:cy="459.39264"
-     inkscape:cx="564.28936"
-     inkscape:zoom="2.8"
+     inkscape:cy="460.34976"
+     inkscape:cx="401.56001"
+     inkscape:zoom="1.979899"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0"
      borderopacity="1.0"
@@ -540,13 +540,13 @@
     <path
        sodipodi:nodetypes="cccc"
        id="path1612"
-       d="M 156.25,125 155,123.125 153.75,125 Z"
-       style="fill:#ff0000;fill-opacity:1;stroke:#ff0000;stroke-width:1.2;stroke-linecap:butt;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       d="M 158.12499,125 155,121.25 151.875,125 Z"
+       style="fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1.2;stroke-linecap:butt;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
     <rect
        y="126.24999"
-       x="152.49998"
-       height="1.25"
-       width="5"
+       x="151.875"
+       height="1.8750036"
+       width="6.2499948"
        id="rect1618"
        style="fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:29.8809;stroke-opacity:1" />
     <path

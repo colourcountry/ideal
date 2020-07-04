@@ -1,7 +1,7 @@
 Cart = EPISODE("Archer")
 
 local t=2
-Cart.Main.levels = {
+Cart.Play.levels = {
   {
     tint=t,
     name="Archer",

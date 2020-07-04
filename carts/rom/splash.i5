@@ -20,9 +20,12 @@ end
 
 function M:DRAW()
   BORDER(0)
-  local letter = FLR(T/2)
-  COLOUR(letter%13)
-  PRINT(MODEL,W/2,letter*L,0,-1)
+  CLS()
+  letter=FLR(T/2)
+  for i=1,FLR(T/2) do
+    COLOUR(i%13)
+    PRINT(MODEL,i*L*(W/H),i*L,0,-1)
+  end
   if letter*L>H/2 then
     ERASER()
     BLOCK(0,H/2-S,W,S*2)

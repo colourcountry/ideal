@@ -3,7 +3,7 @@ Cart = EPISODE("Archer")
 local f = SPRCODE("RED APPLE")
 local t = 9
 
-Cart.Main.levels = {
+Cart.Play.levels = {
   {
     name="The Weird Tower",
     hint=[[I don't remember this place at all, even though it's right in the village. It's creepy.

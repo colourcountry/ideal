@@ -194,6 +194,10 @@ Play = MODE("Today's game")
 Play.icon = SPRCODE("TEAR-OFF CALENDAR")
 Play.bg_tint = 0
 
+function Play:ESCAPE()
+  GO(Menu)
+end
+
 function Play:START()
   scores = {}
   left = 10
@@ -285,6 +289,7 @@ function Play:RELEASE()
 
   if left==0 then
     msg = "Finished!"
+    zone = nil
     TIMER(5)
     return
   end

@@ -142,9 +142,9 @@ end
 
 ------------------------------------------------------------------- main
 
-Main = MODE("Start")
+Play = MODE("Play")
 
-Main.levels = {
+Play.levels = {
   {
     name="Test",
     hint="Run this cart from an episode file",
@@ -158,7 +158,11 @@ Main.levels = {
 
 function wigwag() return FLR(T/4)%2 end
 
-function Main:START()
+function Play:ESCAPE()
+  GO(Menu)
+end
+
+function Play:START()
   self.icon = Cart.icon
   local state = LOAD()
   LOG("Loaded state",state)
@@ -167,14 +171,14 @@ function Main:START()
   faults = state[3] or 0
   POST(1,level)
   player = new_level(level,self.levels[level])
-  restart_button = ENT(SPRCODE("LEFTWARDS ARROW WITH HOOK"),W/2,S)
+  restart_button = ENT(SPRCODE("LEFTWARDS ARROW WITH HOOK"),W/2,S,13)
   active_arrows = LOOP()
   player_arrows = LOOP()
   explosions = LOOP()
   TIMER(60)
 end
 
-------------------------------------------------------------------- main:draw
+------------------------------------------------------------------- Play:draw
 
 function draw_scene()
   COLOUR(0)
@@ -196,13 +200,13 @@ function draw_state()
   end
 end
 
-function Main:DRAW()
+function Play:DRAW()
   CLS()
   draw_scene()
   draw_state()
 end
 
-------------------------------------------------------------------- main:update
+------------------------------------------------------------------- Play:update
 
 function player_shoot()
   local plx, ply = map:whereis(player)
@@ -328,7 +332,7 @@ function move(dx,dy)
   player.spr=Redge.stop
 end
 
-function Main:UPDATE()
+function Play:UPDATE()
   if Ogres.length==0 and active_arrows.length==0 and explosions.length==0 then
     level = level + 1
     SAVE(level,score,faults)
@@ -367,7 +371,7 @@ function Main:UPDATE()
   end
 end
 
-function Main:DRAG(ox, oy, x, y)
+function Play:DRAG(ox, oy, x, y)
   if (not player.busy) and player_carrying and player_carrying:near(x,y,L) then
     player_shoot()
     player.busy = true -- don't move until release
@@ -417,7 +421,7 @@ function Main:DRAG(ox, oy, x, y)
   player.spr=Redge.stop -- solid
 end
 
-function Main:RELEASE(x, y)
+function Play:RELEASE(x, y)
   player:stop()
   player.spr = Redge.stop
   player.busy = false
@@ -425,11 +429,11 @@ function Main:RELEASE(x, y)
   if restart_button:near(x,y,L) then
     faults = faults + 1
     SAVE(level,score,faults)
-    GO(Main)
+    GO(Play)
   end
 end
 
-function Main:KEY(ch)
+function Play:KEY(ch)
   if ch=="n" then
     LOG("TRAINER: next level")
     level = level + 1
@@ -446,7 +450,7 @@ function Main:KEY(ch)
   end
   if ch=="backspace" or ch=="f5" then
     LOG("TRAINER: restart without penalty")
-    GO(Main)
+    GO(Play)
     return true
   end
 end
@@ -481,7 +485,7 @@ end
 
 ------------------------------------------------------------------- level clear
 
-LevelIntro = MODE("Play")
+LevelIntro = MODE("Intro")
 
 function LevelIntro:START()
   local state = LOAD()
@@ -490,7 +494,7 @@ function LevelIntro:START()
   faults = state[3] or 0
   player = ENT(Redge.left,W/2,H/4)
   ANIMATE(player,function() return (T/5)%8 end)
-  if not Main.levels[level] then
+  if not Play.levels[level] then
     POST(2,1)
     POST(3,score)
     POST(4,faults)
@@ -505,12 +509,12 @@ function LevelIntro:DRAW()
   if level then
     local h = 0
     COLOUR(3)
-    PRINT(STR(level).."/"..STR(#Main.levels), W/2, 0, 0, 1)
+    PRINT(STR(level).."/"..STR(#Play.levels), W/2, 0, 0, 1)
     COLOUR(0)
-    local title = SPLIT(Main.levels[level].name or "",W/L," ")
+    local title = SPLIT(Play.levels[level].name or "",W/L," ")
     th = PRINTLINES(title, W/2, S*2, 0, 1)
     COLOUR(13)
-    local hint = SPLIT(Main.levels[level].hint or "",W/L," ")
+    local hint = SPLIT(Play.levels[level].hint or "",W/L," ")
     hh = PRINTLINES(hint, W/2, H/2, 0, 0)
 
   else
@@ -531,7 +535,7 @@ end
 
 function LevelIntro:RELEASE(x,y)
   if level then
-    GO(Main)
+    GO(Play)
   else
     RESTART()
   end
@@ -544,7 +548,7 @@ Cart = {
   info="a puzzle game",
   api="i5",
   start=Menu,
-  Main=Main, -- allow this mode to be overridden by episodes
+  Play=Play, -- allow this mode to be overridden by episodes
 }
 
 return Cart

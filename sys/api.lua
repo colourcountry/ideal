@@ -180,11 +180,13 @@ end
 
 function api.ERASER()
   cur_fg = colours[16]
+  cur_fill_alpha = 1
   cur_shader:send("transform",matrix_for_colour(cur_fg))
 end
 
 function api.COLOUR(fg)
   cur_fg = colours[(fg and math.floor(fg%16)) or 0]
+  cur_fill_alpha = 0.5
   cur_shader:send("transform",matrix_for_colour(cur_fg))
 end
 help[api.COLOUR]=[[Set the current colour.
@@ -375,7 +377,7 @@ function api.BLOCK(x, y, w, h)
   lg.push("all")
   lg.setShader()
   local d = cur_fg
-  d[4] = 0.5
+  d[4] = cur_fill_alpha
   lg.setColor(d)
   lg.rectangle("fill",x*units,y*units,w*units,h*units)
   lg.pop()
@@ -395,7 +397,9 @@ end
 function api.DISC(x, y, r)
   lg.push("all")
   lg.setShader()
-  lg.setColor(cur_fg)
+  local d = cur_fg
+  d[4] = cur_fill_alpha
+  lg.setColor(d)
   lg.circle("fill",x*units,y*units,r*units)
   lg.pop()
 end
