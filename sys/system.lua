@@ -12,6 +12,8 @@ lg.setLineWidth(units)
 
 sprite_size=16
 sprite_radius=sprite_size/2
+touch_offset_x = 0
+touch_offset_y = -sprite_size -- move touch up the screen a little to match perception when held
 
 atlases = {}
 quads = {}
@@ -164,7 +166,7 @@ function love.update()
   touches = love.touch.getTouches()
   for i, id in pairs(touches) do
     local x,y = love.touch.getPosition(id)
-    handle_drag(id,x,y)
+    handle_drag(id,x+touch_offset_x,y+touch_offset_y)
   end
 
   frame_remain = frame_remain + love.timer.getDelta()

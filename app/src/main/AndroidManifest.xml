@@ -27,7 +27,7 @@
         android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation"
         android:label="IDEAL 5"
         android:launchMode="singleTask"
-        android:screenOrientation="unspecified"
+        android:screenOrientation="portrait"
         android:resizeableActivity="false"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         <intent-filter>
