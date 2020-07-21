@@ -24,54 +24,27 @@
 ;   :standfirst [ a :Document; :markdown """Fantasy consoles with touch.""" ]
 
 ;   :description [ a :Document; :markdown """
-This project is inspired by [PICO-8][1], a "fantasy console for making, sharing and playing tiny games and other computer programs"
-whose constraints are "carefully chosen to be fun to work with, to encourage small but expressive designs,
-and to give cartridges made with PICO-8 their own particular look and feel. "
+This project is inspired by [PICO-8][1], a "fantasy console for making, sharing and playing tiny games and other computer programs" whose constraints are "carefully chosen to be fun to work with, to encourage small but expressive designs, and to give cartridges made with PICO-8 their own particular look and feel. "
 
-There's an interesting crossover between "deliberate constraints" and "retro". There's nothing in these design goals that actually says
-using PICO-8 should feel nostalgic. Are the constraints fun in part _because_ previous generations of hardware had these constraints, and we associate them
-with classic as opposed to ugly?
+There's an interesting crossover between "deliberate constraints" and "retro". There's nothing in these design goals that actually says using PICO-8 should feel nostalgic. Are the constraints fun in part _because_ previous generations of hardware had these constraints, and we associate them with classic as opposed to ugly?
 
-The only thing about the PICO-8 that couldn't have been done in the 80s is its processing power.
-A Commodore 64 has the same storage space as a PICO-8, but you couldn't easily write a Commodore 64 game in Lua, because it would be
-too slow. What's implied here is that machine language is just not easy or fun enough to write. The learning curve is too steep.
-This constraint is relaxed in the name of usability.
+The only thing about the PICO-8 that couldn't have been done in the 80s is its processing power. A Commodore 64 has the same storage space as a PICO-8, but you couldn't easily write a Commodore 64 game in Lua, because it would be too slow. What's implied here is that machine language is just not easy or fun enough to write. The learning curve is too steep. This constraint is relaxed in the name of usability.
 
-I think the constraint about size is not _primarily_ about emulating the consoles of the 80s, but as a nudge towards accepting a small box and
-using it to focus on design. Of course there is a PICO-8 demo scene that does plenty of squeezing, just as new games written in machine language
-are still being written for the C64, and people will do things under any constraints they can find, if it provides a challenge.
+I think the constraint about size is not _primarily_ about emulating the consoles of the 80s, but as a nudge towards accepting a small box and using it to focus on design. Of course there is a PICO-8 demo scene that does plenty of squeezing, just as new games written in machine language are still being written for the C64, and people will do things under any constraints they can find, if it provides a challenge.
 
-I am not one for a challenge. So what other constraints should we impose,
-considering modern technology but keeping a pleasingly simple (and yes, retro) aesthetic, but which would open up interesting possibilities?
+I am not one for a challenge. So what other constraints should we impose, considering modern technology but keeping a pleasingly simple (and yes, retro) aesthetic, but which would open up interesting possibilities?
 
-I think touch is one. Retro game ports are mostly designed for controllers. There's nothing we can do about that,
-because that's baked in to the game design, which is something much more fundamental than the graphics, storage
-needs or the ease of coding. Mouse-driven games, as we saw in the 90s, are perhaps more similar, but there are still big
-differences. It's much easier to swipe. It's much harder to select an icon from a grid. That kind of thing.
+I think touch is one. Retro game ports are mostly designed for controllers. There's nothing we can do about that, because that's baked in to the game design, which is something much more fundamental than the graphics, storage needs or the ease of coding. Mouse-driven games, as we saw in the 90s, are perhaps more similar, but there are still big differences. It's much easier to swipe. It's much harder to select an icon from a grid. That kind of thing.
 
-Another reason to focus on touch is that it means that the results can be played on modern phones.
-Most retro ports for phones have some kind of on-screen controller-substitute. IDEAL games don't need this because
-they are touch native.
-(See Lemmings for an interesting touch-powered reboot. Is it still even Lemmings? I mean, apart from the lemmings.)
+Another reason to focus on touch is that it means that the results can be played on modern phones. Most retro ports for phones have some kind of on-screen controller-substitute. IDEAL games don't need this because they are touch native. (See Lemmings for an interesting touch-powered reboot. Is it still even Lemmings? I mean, apart from the lemmings.)
 
-The other two constraints I want to impose, and these are related, are time and state.
-My hunch is that, aside from the programming challenges I mentioned, the
-_space_ constraints imposed by consoles like the PICO-8 are actually aiming at producing games which are smaller in _time_.
-Why should a game take a long time to play?
-Because in playing it, you are evolving a complex game state. Either that, or it is just a dull game.
+The other two constraints I want to impose, and these are related, are time and state. My hunch is that, aside from the programming challenges I mentioned, the _space_ constraints imposed by consoles like the PICO-8 are actually aiming at producing games which are smaller in _time_. Why should a computer game take a long time to play? Because in playing it, you are evolving a complex game state. Either that, or it is just a dull game.
 
-I am going to impose these constraints more directly. You can build up as much state as you like, for up to 10 minutes. But
-after 10 minutes (if you haven't chosen to trigger this yourself at a more convenient time) the system reboots the game, discarding
-all that state. All you can take with you through this event is whatever you have saved in storage, which is limited to about 80
-bytes. (There is also an unlimited storage for high scores and achievements, but these are write only.)
+I am going to impose these constraints more directly. You can build up as much state as you like, for up to 10 minutes. But after 10 minutes (if you haven't chosen to trigger this yourself at a more convenient time) the system reboots the game, discarding all that state. All you can take with you through this event is whatever you have saved in storage, which is limited to about 80 bytes. (There is also an unlimited storage for high scores and achievements, but these are write only.)
 
 ## IDEAL 5
 
-IDEAL is a fantasy hardware developer who launched a touch screen console, the IDEAL 5, in the fourth decade of the 80s. Unfortunately
-their product was the size of a small suitcase, ruinously expensive, and the sound chip proved to run at a dangerously high
-temperature and had to be hurriedly removed from every unit by the distributors. Sadly, the product failed; there are literally none
-left in existence today. But thanks to modern technology, you can play all the IDEAL games that were ever released (currently 1) on
-your smart phone. And you can code new ones, in IDEAL CODE (which is uncannily similar to Lua)
+IDEAL is a fantasy hardware developer who launched a touch screen console, the IDEAL 5, in the fourth decade of the 80s. Unfortunately their product was the size of a small suitcase, ruinously expensive, and if left switched on soon reached a dangerously high temperature. The product failed; there are literally none left in existence today. But thanks to modern technology, you can play all the IDEAL games that were ever released (currently 1) on your smart phone. And you can code new ones, in IDEAL CODE (which is uncannily similar to Lua)
 
 The IDEAL 5 has
 
